@@ -139,18 +139,25 @@
   function updateClock() {
     var now = new Date();
     var stamp = liveStamp(now);
-    /* Update all live-clock elements in the opening scene.
-       The opening section renders these:
-         .live-time   → "9:14 PM"
-         .live-date   → "Tuesday, September 22nd"
-    */
+    /* Opening announcement uses .live-time, .live-weekday, .live-date
+       (or a combined .live-date that already includes weekday). */
     var timeEls = $$('.live-time');
+    var weekdayEls = $$('.live-weekday');
     var dateEls = $$('.live-date');
     for (var i = 0; i < timeEls.length; i++) {
       timeEls[i].textContent = stamp.time;
     }
+    for (var w = 0; w < weekdayEls.length; w++) {
+      weekdayEls[w].textContent = stamp.weekday;
+    }
     for (var j = 0; j < dateEls.length; j++) {
-      dateEls[j].textContent = stamp.weekday + ', ' + stamp.date;
+      /* If a sibling .live-weekday exists, date is month+day only.
+         Otherwise keep legacy "weekday, month day" shape. */
+      var parent = dateEls[j].parentNode;
+      var hasWeekday = parent && parent.querySelector('.live-weekday');
+      dateEls[j].textContent = hasWeekday
+        ? stamp.date
+        : (stamp.weekday + ', ' + stamp.date);
     }
   }
 
@@ -343,13 +350,15 @@
       case 'a':
       case 'A':
         /* "A" key: on the start gate, it starts. Otherwise, advance
-           dialogue. If a typewriter is running, skip it. */
+           opening dialogue when on the opening scene. */
         if (!state.startGateDismissed) {
           dismissStartGate();
           return;
         }
-        /* Let the section handle "A" for dialogue advance.
-           Only do scene advance if nothing else consumed it. */
+        if (state.currentScene === 0 && advanceOpeningDialogue()) {
+          e.preventDefault();
+          return;
+        }
         break;
       default:
         break;
@@ -833,8 +842,8 @@
   }
 
   function triggerAnnouncementTypewriter(beatEl) {
-    /* Find the .rv-line (or equivalent) inside beat 2 */
-    var lineEl = $('.rv-line', beatEl) || $('[data-typing]', beatEl);
+    /* Find the typed line inside beat 2 */
+    var lineEl = $('.reveal__line', beatEl) || $('.rv-line', beatEl) || $('[data-typing]', beatEl);
     if (!lineEl) return;
 
     /* Read data attributes set by the section module:
@@ -874,26 +883,23 @@
   function spawnConfetti(beatEl) {
     if (state.reducedMotion) return;
 
-    var container = $('.rv-confetti', beatEl) || $('.reveal-confetti', beatEl);
+    var container = $('.reveal__confetti', beatEl) ||
+                    $('.reveal-confetti', beatEl) ||
+                    $('[data-confetti]', beatEl);
     if (!container) return;
 
     /* Seedable PRNG for repeatable confetti layout */
     var seed = 7;
     function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
 
-    var colors = ['c1', 'c2', 'c3', 'c4', 'c5'];
-    var shapes = ['', 'round', 'strip'];
-
     for (var i = 0; i < 60; i++) {
       var piece = document.createElement('span');
-      piece.className = 'rv-conf ' + colors[i % 5] + ' ' + shapes[i % 3];
+      piece.className = 'confetti-piece';
       var d = 5 + rnd() * 5;
-      piece.style.left = (rnd() * 100).toFixed(2) + '%';
-      piece.style.setProperty('--d', d.toFixed(2) + 's');
+      piece.style.setProperty('--x', (rnd() * 100).toFixed(2) + '%');
+      piece.style.setProperty('--duration', d.toFixed(2) + 's');
       piece.style.setProperty('--delay', (-rnd() * d).toFixed(2) + 's');
-      piece.style.setProperty('--r', Math.round(rnd() * 360) + 'deg');
       piece.style.setProperty('--sway', Math.round((rnd() - 0.5) * 120) + 'px');
-      piece.style.setProperty('--top', (rnd() * 90).toFixed(1) + '%');
       piece.setAttribute('aria-hidden', 'true');
       container.appendChild(piece);
     }
@@ -917,7 +923,7 @@
     }
 
     /* Clear confetti */
-    var confettiContainers = $$('.rv-confetti', revealRoot);
+    var confettiContainers = $$('.reveal__confetti, .reveal-confetti, [data-confetti]', revealRoot);
     for (var c = 0; c < confettiContainers.length; c++) {
       confettiContainers[c].textContent = '';
     }
@@ -940,7 +946,7 @@
        We delegate the click because the button is inside a
        dynamically-rendered section. */
     document.addEventListener('click', function (e) {
-      var btn = e.target.closest('.rv-replay');
+      var btn = e.target.closest('.reveal__replay, .rv-replay, [data-replay]');
       if (!btn) return;
       e.preventDefault();
       sound('select');
@@ -959,6 +965,73 @@
           triggerAnnouncementTypewriter(announceEl);
         }
       }, state.reducedMotion ? 0 : 550);
+    });
+  }
+
+  /* ================================================================
+     OPENING DIALOGUE ADVANCE
+     ================================================================ */
+
+  var openingDialogue = {
+    index: -1,   /* -1 = announcement only; 0+ = revealed dialogue lines */
+    done: false
+  };
+
+  /**
+   * Reveal the next opening dialogue line. Returns true if something
+   * was advanced (so the A-key handler can preventDefault).
+   */
+  function advanceOpeningDialogue() {
+    var root = document.getElementById('opening');
+    if (!root) return false;
+
+    var lines = $$('[data-opening-dialogue] .opening__dline', root);
+    var prompt = $('[data-opening-next], .opening__prompt', root);
+    var keepGoing = '';
+    try {
+      keepGoing = (window.ACContent && ACContent.get('ui.keepGoing')) || '';
+    } catch (e) {}
+
+    if (openingDialogue.done) {
+      /* After last line, Next moves to the following scene. */
+      if (state.currentScene < TOTAL_SECTIONS - 1) {
+        scrollToScene(state.currentScene + 1);
+        return true;
+      }
+      return false;
+    }
+
+    openingDialogue.index += 1;
+    if (openingDialogue.index < lines.length) {
+      lines[openingDialogue.index].hidden = false;
+      sound('select');
+      if (openingDialogue.index === lines.length - 1) {
+        openingDialogue.done = true;
+        if (prompt) {
+          var label = prompt.querySelector('[data-content-next]');
+          if (label && keepGoing) label.textContent = keepGoing;
+        }
+      }
+      return true;
+    }
+
+    openingDialogue.done = true;
+    return false;
+  }
+
+  function setupOpeningDialogue() {
+    openingDialogue.index = -1;
+    openingDialogue.done = false;
+
+    var root = document.getElementById('opening');
+    if (!root) return;
+
+    var prompt = $('[data-opening-next], .opening__prompt', root);
+    if (!prompt) return;
+
+    prompt.addEventListener('click', function (e) {
+      e.preventDefault();
+      advanceOpeningDialogue();
     });
   }
 
@@ -1275,6 +1348,9 @@
 
     /* Replay button delegation */
     setupReplay();
+
+    /* Opening dialogue Next / A advance */
+    setupOpeningDialogue();
 
     /* Content status: if fetch failed, show a non-intrusive notice.
        content.js already shows a role="status" notice. If we're in

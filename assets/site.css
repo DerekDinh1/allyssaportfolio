@@ -631,7 +631,8 @@ html.is-presenting main > section {
 }
 
 .confetti,
-.reveal-confetti {
+.reveal-confetti,
+.reveal__confetti {
   position: absolute;
   inset: 0;
   z-index: var(--z-scene);
@@ -640,7 +641,8 @@ html.is-presenting main > section {
 }
 
 .confetti-piece,
-.reveal-confetti > span {
+.reveal-confetti > span,
+.reveal__confetti > span {
   position: absolute;
   top: -32px;
   left: var(--x, 50%);
@@ -652,13 +654,17 @@ html.is-presenting main > section {
 }
 
 .confetti-piece:nth-child(5n+2),
-.reveal-confetti > span:nth-child(5n+2) { background: var(--ac-ticket); }
+.reveal-confetti > span:nth-child(5n+2),
+.reveal__confetti > span:nth-child(5n+2) { background: var(--ac-ticket); }
 .confetti-piece:nth-child(5n+3),
-.reveal-confetti > span:nth-child(5n+3) { background: var(--ac-leaf); }
+.reveal-confetti > span:nth-child(5n+3),
+.reveal__confetti > span:nth-child(5n+3) { background: var(--ac-leaf); }
 .confetti-piece:nth-child(5n+4),
-.reveal-confetti > span:nth-child(5n+4) { background: var(--ac-nook-blue); }
+.reveal-confetti > span:nth-child(5n+4),
+.reveal__confetti > span:nth-child(5n+4) { background: var(--ac-nook-blue); }
 .confetti-piece:nth-child(5n),
-.reveal-confetti > span:nth-child(5n) { background: var(--ac-pink-deep); }
+.reveal-confetti > span:nth-child(5n),
+.reveal__confetti > span:nth-child(5n) { background: var(--ac-pink-deep); }
 
 @keyframes site-confetti {
   0% { transform: translate3d(0, -5vh, 0) rotate(0deg); }
@@ -869,7 +875,8 @@ html.is-presenting main > section {
   }
 
   .confetti,
-  .reveal-confetti {
+  .reveal-confetti,
+  .reveal__confetti {
     display: none !important;
   }
 }

@@ -95,32 +95,58 @@
       line.setAttribute('aria-live', 'polite');
       box.appendChild(line);
 
-      /* The announcement is rendered immediately (not typed) so the
-         live clock is always visible. */
+      /* Announcement shows immediately with live clock spans so app.js
+         can refresh .live-time / .live-date every 10s. */
       var announcement = C.get('opening.announcement');
       if (C.isBlank(announcement)) {
         line.appendChild(el('span', 'ac-empty-inline', 'Waiting to be filled in'));
         line.classList.add('is-empty');
       } else {
-        line.appendChild(C.rich(announcement, C.liveStamp()));
+        var stamp = C.liveStamp();
+        /* Protect live tokens, fill the rest, then expand *emphasis* + live spans. */
+        var marked = String(announcement)
+          .replace(/\{time\}/g, '\u0001T\u0001')
+          .replace(/\{weekday\}/g, '\u0001W\u0001')
+          .replace(/\{date\}/g, '\u0001D\u0001');
+        var filled = C.fill(marked);
+        var chunks = filled.split(/(\u0001[TWD]\u0001|\*[^*]+\*)/g);
+        for (var ci = 0; ci < chunks.length; ci++) {
+          var chunk = chunks[ci];
+          if (!chunk) continue;
+          if (chunk === '\u0001T\u0001') {
+            line.appendChild(el('span', 'live-time', stamp.time));
+          } else if (chunk === '\u0001W\u0001') {
+            line.appendChild(el('span', 'live-weekday', stamp.weekday));
+          } else if (chunk === '\u0001D\u0001') {
+            line.appendChild(el('span', 'live-date', stamp.date));
+          } else if (chunk.charAt(0) === '*' && chunk.charAt(chunk.length - 1) === '*') {
+            line.appendChild(el('span', 'ac-hl', chunk.slice(1, -1)));
+          } else {
+            line.appendChild(document.createTextNode(chunk));
+          }
+        }
       }
       box.appendChild(el('span', 'ac-next'));
       boxWrap.appendChild(box);
 
-      /* Dialogue lines are collected for the typewriter in app.js */
+      /* Dialogue lines start hidden; app.js advances them one at a time. */
       var lines = C.get('opening.dialogue');
       var dlg = el('div', 'opening__dialogue');
+      dlg.setAttribute('data-opening-dialogue', '');
       if (!C.isBlank(lines) && lines.length) {
-        dlg.setAttribute('data-opening-dialogue', '');
         for (var i = 0; i < lines.length; i++) {
+          if (C.isBlank(lines[i])) continue;
           var item = el('p', 'opening__dline');
-          item.appendChild(C.rich(lines[i], C.liveStamp()));
+          item.hidden = true;
+          item.appendChild(C.rich(lines[i]));
           dlg.appendChild(item);
         }
       }
       boxWrap.appendChild(dlg);
 
-      var prompt = el('p', 'ac-btn opening__prompt');
+      var prompt = el('button', 'ac-btn opening__prompt');
+      prompt.type = 'button';
+      prompt.setAttribute('data-opening-next', '');
       var key = el('span', 'ac-key ac-key--a', 'A');
       key.setAttribute('aria-hidden', 'true');
       prompt.appendChild(key);
@@ -157,7 +183,7 @@
           var blank = C.isBlank(e.time) && C.isBlank(e.title) && C.isBlank(e.detail);
           if (!blank) anyReal = true;
 
-          var li = el('li', 'ac-timeline__item' + (blank ? ' ac-empty' : ''));
+          var li = el('li', 'ac-timeline__item reveal-on-scroll' + (blank ? ' ac-empty' : ''));
           li.setAttribute('data-reveal-on-scroll', '');
 
           var dot = el('span', 'ac-timeline__dot');
@@ -227,7 +253,7 @@
           var blankValue = C.isBlank(it.value);
           var blank = blankLabel && blankValue;
 
-          var t = el('article', 'ac-ticket ac-stats__ticket' + (blank ? ' ac-empty' : ''));
+          var t = el('article', 'ac-ticket ac-stats__ticket reveal-on-scroll' + (blank ? ' ac-empty' : ''));
           t.setAttribute('data-reveal-on-scroll', '');
 
           var lbl = el('span', 'ac-ticket__label');
@@ -280,7 +306,7 @@
           var ph = photos[i] || {};
           var hasImg = !C.isBlank(ph.image);
 
-          var fig = el('figure', 'ac-card ac-gallery__item' + (hasImg ? '' : ' ac-empty'));
+          var fig = el('figure', 'ac-card ac-gallery__item reveal-on-scroll' + (hasImg ? '' : ' ac-empty'));
           fig.setAttribute('data-reveal-on-scroll', '');
 
           var shot = el('div', 'ac-gallery__shot');
@@ -362,12 +388,23 @@
         box2.appendChild(el('span', 'ac-tag ac-tag--pink reveal__badge', C.fill(C.get('reveal.announcement.badge'))));
       }
       var line2 = el('p', 'ac-box__text reveal__line');
-      line2.setAttribute('data-typing', '');
       var l2 = C.get('reveal.announcement.line');
       if (C.isBlank(l2)) {
         line2.appendChild(el('span', 'ac-empty-inline', 'Waiting to be filled in'));
       } else {
-        line2.appendChild(C.rich(l2));
+        /* Segments for app.js typewriter; leave node empty until triggered. */
+        var filled = C.fill(l2);
+        var segments = [];
+        var parts = filled.split('*');
+        for (var si = 0; si < parts.length; si++) {
+          if (!parts[si]) continue;
+          if (si % 2 === 1 && si < parts.length - 1) {
+            segments.push({ text: parts[si], cls: 'ac-hl' });
+          } else {
+            segments.push({ text: parts[si] });
+          }
+        }
+        line2.setAttribute('data-typing', JSON.stringify(segments));
       }
       box2.appendChild(line2);
       if (!C.isBlank(C.get('reveal.announcement.detail'))) {
@@ -451,13 +488,14 @@
       if (!C.isBlank(C.get('reveal.finale.detail'))) {
         b5.appendChild(el('p', 'reveal__finale-detail', C.fill(C.get('reveal.finale.detail'))));
       }
-      var confetti = el('div', 'reveal__confetti');
+      var confetti = el('div', 'reveal__confetti reveal-confetti');
       confetti.setAttribute('data-confetti', '');
       confetti.setAttribute('aria-hidden', 'true');
       b5.appendChild(confetti);
       var replay = el('button', 'ac-btn reveal__replay');
       replay.type = 'button';
       replay.setAttribute('data-replay', '');
+      replay.classList.add('rv-replay');
       var rk = el('span', 'ac-key ac-key--a', 'A');
       rk.setAttribute('aria-hidden', 'true');
       replay.appendChild(rk);

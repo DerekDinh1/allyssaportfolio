@@ -20,12 +20,18 @@
 
 <a class="skip-link" href="#main" data-content="ui.skipLink" data-hide-empty>Skip to content</a>
 
+<noscript>
+  <p style="padding:1.5rem;font-family:system-ui,sans-serif;text-align:center;">
+    Allyssa's Island needs JavaScript to load its content. Please enable JavaScript and refresh.
+  </p>
+</noscript>
+
 <!-- ============ "Press A" start gate ============
      ACNH opens with a title screen, and browsers block audio until a
      user gesture — so this gate is both authentic and required. -->
 <div class="start-gate" id="start-gate">
   <img class="start-gate__leaf ac-spin" src="assets/leaf.svg" alt="" aria-hidden="true" width="96" height="96">
-  <p class="start-gate__title" data-content="site.title" data-hide-empty>Allyssa's Island</p>
+  <h1 class="start-gate__title" data-content="site.title" data-hide-empty>Allyssa's Island</h1>
   <p class="start-gate__tagline" data-content="site.tagline" data-hide-empty></p>
   <button class="start-gate__button" type="button">
     <span class="ac-key ac-key--a" aria-hidden="true">A</span>
