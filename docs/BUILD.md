@@ -348,3 +348,30 @@ placeholder copy:**
 
 When a value is not known, the field stays **empty** and the site shows its
 inviting empty state (§3c).
+
+---
+
+## 9. Deployment record
+
+| Item | Value |
+|---|---|
+| Repository | https://github.com/DerekDinh1/allyssaportfolio (public) |
+| Live site | https://derekdinh1.github.io/allyssaportfolio/ |
+| Branch | `main`, served from repo root |
+| Build step | None — static files only |
+| Pages status | built and verified |
+
+### Verified against the live URL
+All five sections render with real content (8 timeline entries, 8 stat tickets,
+8 gallery frames, 5 reveal beats). The opening line resolves the live clock, e.g.
+"Right now at Thuy and Melissa's house, it's 10:41 AM on Wednesday, September 23rd."
+Every asset returns HTTP 200 over HTTPS. No template-token leaks. No year is
+attached to October 4th.
+
+### Still unverified
+- **Visual appearance** — no agent in this session can accept image input, so the
+  rendered pixels have not been reviewed by eye. A human must look at the live site.
+- **Audio** — the sound kit is code-reviewed only; it was never listened to.
+  Audio also requires the "Press A" gesture, so it cannot be heard in a screenshot.
+- **Pages CMS handshake** — `.pages.yml` matches `content/site.json` field-by-field,
+  but the hosted editor has not been connected to the repo yet.
