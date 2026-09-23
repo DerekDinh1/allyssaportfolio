@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Approval preview — Allyssa in office chair</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: linear-gradient(180deg, #dfeec0, #b8d878);
+    font-family: Nunito, system-ui, sans-serif;
+    color: #5E4022;
+  }
+  .banner {
+    text-align: center;
+    padding: 16px 20px;
+    background: rgba(255,253,244,.9);
+    border-bottom: 3px solid #7EC850;
+    font-weight: 800;
+  }
+  .banner small { display:block; margin-top:6px; font-weight:600; opacity:.72; }
+  .stage-wrap { max-width: 1040px; margin: 28px auto; padding: 0 16px; }
+  .stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 20px 48px rgba(94,64,34,.3);
+    background: #D9A96C;
+  }
+  .stage__bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  /* chair sits behind her, seat under torso */
+  .stage__chair {
+    position: absolute;
+    left: 50%;
+    bottom: 26%;
+    width: 20%;
+    height: auto;
+    transform: translateX(-48%);
+    z-index: 2;
+    filter: drop-shadow(0 10px 12px rgba(94,64,34,.28));
+  }
+  /* character sunk into chair; legs clipped by desk */
+  .stage__allyssa {
+    position: absolute;
+    left: 50%;
+    bottom: 12%;
+    width: 28%;
+    transform: translateX(-50%) translateY(8%);
+    z-index: 3;
+    filter: drop-shadow(0 12px 16px rgba(94,64,34,.32));
+    clip-path: inset(0 4% 28% 4%);
+  }
+  .stage__desk {
+    position: absolute;
+    left: -4%; right: -4%;
+    bottom: -4%;
+    height: 36%;
+    z-index: 4;
+    background: linear-gradient(180deg, #E0B57E 0%, #D9A96C 22%, #B98A5A 70%, #9A6E42 100%);
+    border-radius: 50% 50% 0 0 / 30% 30% 0 0;
+    box-shadow: 0 -10px 28px rgba(94,64,34,.2);
+  }
+  .stage__desk::after {
+    content:"";
+    position:absolute; left:10%; right:10%; top:16%;
+    height: 8px; border-radius:999px;
+    background: rgba(138,97,54,.4);
+  }
+  .note { max-width:700px; margin:0 auto 40px; padding:0 20px; text-align:center; line-height:1.5; font-weight:600; }
+</style>
+</head>
+<body>
+  <div class="banner">
+    APPROVAL PREVIEW — not on the live site yet
+    <small>Photo character cut out and seated in the office chair (desk covers legs). Approve before production change.</small>
+  </div>
+  <div class="stage-wrap">
+    <div class="stage">
+      <img class="stage__bg" src="../../assets/office-bg.svg" alt="">
+      <img class="stage__chair" src="chair.png" alt="">
+      <img class="stage__allyssa" src="allyssa-seated.png" alt="Allyssa seated preview">
+      <div class="stage__desk" aria-hidden="true"></div>
+    </div>
+  </div>
+  <p class="note">Arms still joyful/standing from the photo. Next pass can rest arms on the desk if you want a truer sit.</p>
+</body>
+</html>

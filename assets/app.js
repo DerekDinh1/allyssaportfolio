@@ -30,7 +30,11 @@
 
   var SECTION_IDS = ['opening', 'daily', 'stats', 'gallery', 'reveal'];
   var TOTAL_SECTIONS = SECTION_IDS.length;
+  /* Content scenes shown in presentation nav (surprise is a popup, not a slide). */
+  var CONTENT_SCENES = 4;
   var CLOCK_INTERVAL_MS = 10000;   // update live clock every 10 s
+  var SAVING_HOLD_MS = 3200;       // how long the Saving... beat stays up
+  var SAVING_HOLD_REDUCED_MS = 900;
 
   /* cached DOM lookups populated during boot */
   var dom = {};
@@ -42,7 +46,10 @@
     muted: false,
     clockTimer: null,
     reducedMotion: false,
-    startGateDismissed: false
+    startGateDismissed: false,
+    surpriseOpen: false,           // true while surprise modal is up
+    savingHoldUntil: 0,            // timestamp; beat 2 waits until this
+    surpriseStep: 0                // 0=idle, 1..5 = current surprise beat
   };
 
   /* ================================================================
@@ -277,18 +284,31 @@
     var idx = state.currentScene;
     var el = dom.sceneProgress;
     if (!el) return;
-    var num = String(idx + 1);
+    /* Presentation counts content scenes only (surprise is a popup). */
+    var shown = Math.min(idx + 1, CONTENT_SCENES);
+    var total = CONTENT_SCENES;
+    var num = String(shown);
     el.innerHTML = (num.length === 1 ? '0' + num : num) +
-                   ' <small>/ ' + (TOTAL_SECTIONS < 10 ? '0' + TOTAL_SECTIONS : TOTAL_SECTIONS) + '</small>';
+                   ' <small>/ ' + (total < 10 ? '0' + total : total) + '</small>';
   }
 
   function scrollToScene(idx) {
-    if (idx < 0 || idx >= TOTAL_SECTIONS) return;
+    if (idx < 0) return;
+
+    /* From gallery forward → open surprise popup instead of scrolling to #reveal */
+    if (idx >= CONTENT_SCENES) {
+      openSurprise();
+      return;
+    }
+
+    /* Leaving surprise */
+    if (state.surpriseOpen) closeSurprise();
+
     var id = SECTION_IDS[idx];
     var el = document.getElementById(id);
     if (!el) return;
     el.scrollIntoView({ behavior: state.reducedMotion ? 'auto' : 'smooth', block: 'start' });
-    enterScene(idx);   /* sets currentScene, updates indicator, calls enter() */
+    enterScene(idx);
     sound('select');
   }
 
@@ -333,26 +353,39 @@
       case 'ArrowRight':
       case 'PageDown':
       case ' ':
-        /* Space in a non-form context advances; in a form, ignore */
         if (key === ' ' && isForm) return;
         e.preventDefault();
-        if (state.currentScene < TOTAL_SECTIONS - 1) {
+        if (state.surpriseOpen) {
+          advanceSurprise();
+          return;
+        }
+        if (state.currentScene < CONTENT_SCENES - 1) {
           scrollToScene(state.currentScene + 1);
+        } else if (state.currentScene === CONTENT_SCENES - 1) {
+          openSurprise();
         }
         break;
       case 'ArrowLeft':
       case 'PageUp':
         e.preventDefault();
+        if (state.surpriseOpen) {
+          closeSurprise();
+          scrollToScene(CONTENT_SCENES - 1);
+          return;
+        }
         if (state.currentScene > 0) {
           scrollToScene(state.currentScene - 1);
         }
         break;
       case 'a':
       case 'A':
-        /* "A" key: on the start gate, it starts. Otherwise, advance
-           opening dialogue when on the opening scene. */
         if (!state.startGateDismissed) {
           dismissStartGate();
+          return;
+        }
+        if (state.surpriseOpen) {
+          e.preventDefault();
+          advanceSurprise();
           return;
         }
         if (state.currentScene === 0 && advanceOpeningDialogue()) {
@@ -532,7 +565,7 @@
      ================================================================ */
 
   function enterScene(idx) {
-    if (idx < 0 || idx >= TOTAL_SECTIONS) return;
+    if (idx < 0 || idx >= CONTENT_SCENES) return;
     state.currentScene = idx;
     updateSceneIndicator();
 
@@ -546,8 +579,9 @@
   }
 
   /**
-   * Track which section is most on-screen (by IntersectionObserver ratio)
-   * and set currentScene to that index.
+   * Track which content section is most on-screen (by IntersectionObserver
+   * ratio) and set currentScene to that index. The surprise section is
+   * excluded — it only appears as a popup.
    */
   function setupSceneTracking() {
     if (!('IntersectionObserver' in window)) return;
@@ -555,9 +589,8 @@
     var thresholds = [];
     for (var t = 0; t <= 20; t++) thresholds.push(t / 20);
 
-    /* Map element → current intersection ratio */
     var ratios = {};
-    for (var i = 0; i < TOTAL_SECTIONS; i++) {
+    for (var i = 0; i < CONTENT_SCENES; i++) {
       ratios[SECTION_IDS[i]] = 0;
     }
 
@@ -565,23 +598,22 @@
       for (var e = 0; e < entries.length; e++) {
         ratios[entries[e].target.id] = entries[e].intersectionRatio;
       }
-      /* Find the section with the highest intersection ratio */
+      if (!state.presentationActive || state.surpriseOpen) return;
       var bestIdx = 0;
       var bestRatio = 0;
-      for (var j = 0; j < TOTAL_SECTIONS; j++) {
+      for (var j = 0; j < CONTENT_SCENES; j++) {
         var r = ratios[SECTION_IDS[j]] || 0;
         if (r > bestRatio) {
           bestRatio = r;
           bestIdx = j;
         }
       }
-      if (!state.presentationActive) return;
       if (bestRatio > 0 && bestIdx !== state.currentScene) {
         enterScene(bestIdx);
       }
     }, { threshold: thresholds });
 
-    for (var k = 0; k < TOTAL_SECTIONS; k++) {
+    for (var k = 0; k < CONTENT_SCENES; k++) {
       var el = document.getElementById(SECTION_IDS[k]);
       if (el) io.observe(el);
     }
@@ -739,31 +771,131 @@
   }
 
   /* ================================================================
-     REVEAL CHAIN (section 5: reveal)
+     SURPRISE POPUP + REVEAL CHAIN
      ================================================================ */
 
   /**
-   * The reveal section (id="reveal") has five beats that appear in
-   * scroll order. This function sets up IntersectionObservers to
-   * sequence them: beat 1 (saving), beat 2 (typewriter announcement),
-   * beat 3 (achievement stamp), beat 4 (letter), beat 5 (finale).
-   *
-   * The section module (ACSections.reveal) builds the DOM; here we
-   * observe it and trigger animations / sounds.
+   * Surprise is not a scroll section in presentation — it pops over
+   * the page. Saving... holds on screen longer before the next beat.
+   */
+  function openSurprise() {
+    var root = document.getElementById('reveal');
+    if (!root || state.surpriseOpen) return;
+
+    state.surpriseOpen = true;
+    state.surpriseStep = 0;
+    sound('select');
+
+    root.classList.add('is-surprise-open');
+    root.setAttribute('role', 'dialog');
+    root.setAttribute('aria-modal', 'true');
+    root.removeAttribute('hidden');
+    document.body.classList.add('surprise-open');
+
+    /* Reset beats then run the sequenced popup show */
+    resetRevealChain(true);
+    runSurpriseSequence();
+
+    try {
+      root.focus({ preventScroll: true });
+    } catch (e) {
+      try { root.focus(); } catch (e2) {}
+    }
+  }
+
+  function closeSurprise() {
+    var root = document.getElementById('reveal');
+    state.surpriseOpen = false;
+    state.surpriseStep = 0;
+    state.savingHoldUntil = 0;
+    if (state.surpriseTimers) {
+      for (var i = 0; i < state.surpriseTimers.length; i++) {
+        clearTimeout(state.surpriseTimers[i]);
+      }
+      state.surpriseTimers = [];
+    }
+    document.body.classList.remove('surprise-open');
+    if (root) {
+      root.classList.remove('is-surprise-open');
+      root.removeAttribute('aria-modal');
+    }
+  }
+
+  function scheduleSurprise(fn, ms) {
+    if (!state.surpriseTimers) state.surpriseTimers = [];
+    state.surpriseTimers.push(setTimeout(fn, ms));
+  }
+
+  /** Advance to next surprise beat (A / Space / click while popup open). */
+  function advanceSurprise() {
+    if (!state.surpriseOpen) return;
+    /* Skip remaining hold on Saving... and jump ahead */
+    if (state.surpriseStep === 1 && Date.now() < state.savingHoldUntil) {
+      if (state.surpriseTimers) {
+        for (var i = 0; i < state.surpriseTimers.length; i++) {
+          clearTimeout(state.surpriseTimers[i]);
+        }
+        state.surpriseTimers = [];
+      }
+      showSurpriseBeat(2);
+      return;
+    }
+    if (state.surpriseStep >= 5) {
+      /* Stay on finale; replay button handles restart */
+      return;
+    }
+    showSurpriseBeat(state.surpriseStep + 1);
+  }
+
+  function showSurpriseBeat(num) {
+    var root = document.getElementById('reveal');
+    if (!root) return;
+    var beat = $('[data-reveal-beat="' + num + '"]', root);
+    if (!beat) return;
+
+    /* Hide prior beats; show this one full-screen in the popup */
+    var all = $$('[data-reveal-beat]', root);
+    for (var i = 0; i < all.length; i++) {
+      all[i].classList.remove('is-in', 'is-armed', 'is-surprise-current');
+      if (parseInt(all[i].getAttribute('data-reveal-beat'), 10) !== num) {
+        all[i].setAttribute('hidden', '');
+      } else {
+        all[i].removeAttribute('hidden');
+      }
+    }
+
+    state.surpriseStep = num;
+    beat.classList.add('is-armed', 'is-in', 'is-surprise-current');
+    triggerBeat(String(num), beat);
+
+    if (num === 1) {
+      var hold = state.reducedMotion ? SAVING_HOLD_REDUCED_MS : SAVING_HOLD_MS;
+      state.savingHoldUntil = Date.now() + hold;
+      scheduleSurprise(function () {
+        if (state.surpriseOpen && state.surpriseStep === 1) {
+          showSurpriseBeat(2);
+        }
+      }, hold);
+    }
+  }
+
+  function runSurpriseSequence() {
+    showSurpriseBeat(1);
+  }
+
+  /**
+   * Scroll-based reveal chain (fallback if someone deep-links #reveal).
+   * In normal use the surprise opens as a popup instead.
    */
   function setupRevealChain() {
     var revealRoot = document.getElementById('reveal');
     if (!revealRoot) return;
 
-    /* Look for the reveal beats. The section module should mark them
-       with data-reveal-beat="1" through "5" */
-    var beats = {
-      saving:       $('[data-reveal-beat="1"]', revealRoot),
-      announcement: $('[data-reveal-beat="2"]', revealRoot),
-      achievement:  $('[data-reveal-beat="3"]', revealRoot),
-      letter:       $('[data-reveal-beat="4"]', revealRoot),
-      finale:       $('[data-reveal-beat="5"]', revealRoot)
-    };
+    /* Keep reveal out of the page flow until the popup opens. */
+    if (!revealRoot.hasAttribute('tabindex')) {
+      revealRoot.setAttribute('tabindex', '-1');
+    }
+    revealRoot.classList.add('reveal--popup');
 
     var beatPlayed = {};
     var beatArmed = {};
@@ -775,36 +907,30 @@
     }
     state.revealObservers = [];
 
-    if (!('IntersectionObserver' in window)) {
-      /* No observer: show everything immediately */
-      for (var k in beats) {
-        if (beats[k]) beats[k].classList.add('is-in');
-      }
-      return;
-    }
+    /* Scroll observers only matter if popup styling fails — keep light arming. */
+    if (!('IntersectionObserver' in window)) return;
 
-    /* Arm observer: arm (prepare for animation) as soon as any pixel enters */
     var armIO = new IntersectionObserver(function (entries) {
       for (var e = 0; e < entries.length; e++) {
         var en = entries[e];
         if (en.isIntersecting && !beatArmed[en.target.dataset.revealBeat]) {
           beatArmed[en.target.dataset.revealBeat] = true;
-          if (!state.reducedMotion) {
-            en.target.classList.add('is-armed');
-          }
+          if (!state.reducedMotion) en.target.classList.add('is-armed');
         }
       }
     }, { threshold: 0 });
 
-    /* Trigger observer: fire the beat when substantially visible */
     var triggerIO = new IntersectionObserver(function (entries) {
       for (var e = 0; e < entries.length; e++) {
         var en = entries[e];
         if (!en.isIntersecting) continue;
+        /* Never auto-play surprise from scroll — popup owns the sequence. */
+        if (!state.surpriseOpen) continue;
         var beatNum = en.target.dataset.revealBeat;
         if (beatPlayed[beatNum]) continue;
+        /* Saving hold: delay beat 2 until hold expires */
+        if (beatNum === '2' && Date.now() < state.savingHoldUntil) continue;
         beatPlayed[beatNum] = true;
-
         triggerBeat(beatNum, en.target);
       }
     }, { threshold: 0.4 });
@@ -822,17 +948,17 @@
   function triggerBeat(num, el) {
     el.classList.add('is-in');
     switch (num) {
+      case '1':
+        sound('confirm');
+        break;
       case '2':
-        /* Announcement typewriter: look for the line element inside */
         triggerAnnouncementTypewriter(el);
         break;
       case '3':
-        /* Achievement stamp */
         setTimeout(function () { sound('stamp'); }, state.reducedMotion ? 0 : 650);
         setTimeout(function () { sound('fanfare'); }, state.reducedMotion ? 150 : 950);
         break;
       case '5':
-        /* Finale: fanfare + confetti */
         sound('fanfare');
         spawnConfetti(el);
         break;
@@ -905,36 +1031,39 @@
     }
   }
 
-  /** Reset all reveal beats for replay */
-  function resetRevealChain() {
+  /** Reset all reveal beats for replay.
+   *  @param {boolean} soft  if true, don't reconnect observers (popup restart) */
+  function resetRevealChain(soft) {
     var revealRoot = document.getElementById('reveal');
     if (!revealRoot) return;
 
-    /* Remove played/armed classes */
+    if (state.surpriseTimers) {
+      for (var t = 0; t < state.surpriseTimers.length; t++) {
+        clearTimeout(state.surpriseTimers[t]);
+      }
+      state.surpriseTimers = [];
+    }
+    state.savingHoldUntil = 0;
+
     var allBeats = $$('[data-reveal-beat]', revealRoot);
     for (var i = 0; i < allBeats.length; i++) {
-      allBeats[i].classList.remove('is-armed', 'is-in');
+      allBeats[i].classList.remove('is-armed', 'is-in', 'is-surprise-current');
+      allBeats[i].removeAttribute('hidden');
     }
 
-    /* Reset achievement-specific state */
     var achv = $('[data-reveal-beat="3"]', revealRoot);
-    if (achv) {
-      achv.classList.remove('is-shake');
-    }
+    if (achv) achv.classList.remove('is-shake');
 
-    /* Clear confetti */
     var confettiContainers = $$('.reveal__confetti, .reveal-confetti, [data-confetti]', revealRoot);
     for (var c = 0; c < confettiContainers.length; c++) {
       confettiContainers[c].textContent = '';
     }
 
-    /* Let the section module restore its own initial state */
     if (window.ACSections && ACSections.reveal && typeof ACSections.reveal.reset === 'function') {
       try { ACSections.reveal.reset(); } catch (e) {}
     }
 
-    /* Re-observe everything (old observers are disconnected inside) */
-    setupRevealChain();
+    if (!soft) setupRevealChain();
   }
 
   /* ================================================================
@@ -942,29 +1071,26 @@
      ================================================================ */
 
   function setupReplay() {
-    /* The "Play it again" button is rendered by the reveal section.
-       We delegate the click because the button is inside a
-       dynamically-rendered section. */
     document.addEventListener('click', function (e) {
       var btn = e.target.closest('.reveal__replay, .rv-replay, [data-replay]');
-      if (!btn) return;
-      e.preventDefault();
-      sound('select');
-
-      resetRevealChain();
-
-      /* Scroll back to the announcement (beat 2) */
-      var announceEl = $('[data-reveal-beat="2"]');
-      if (announceEl) {
-        announceEl.scrollIntoView({ behavior: state.reducedMotion ? 'auto' : 'smooth', block: 'start' });
+      if (btn) {
+        e.preventDefault();
+        sound('select');
+        if (!state.surpriseOpen) openSurprise();
+        else {
+          resetRevealChain(true);
+          runSurpriseSequence();
+        }
+        return;
       }
 
-      /* Re-trigger the announcement typewriter after a short delay */
-      setTimeout(function () {
-        if (announceEl) {
-          triggerAnnouncementTypewriter(announceEl);
+      /* Click anywhere on the surprise (except replay) advances beats */
+      if (state.surpriseOpen) {
+        var root = document.getElementById('reveal');
+        if (root && root.contains(e.target) && !e.target.closest('a, button')) {
+          advanceSurprise();
         }
-      }, state.reducedMotion ? 0 : 550);
+      }
     });
   }
 
@@ -994,7 +1120,7 @@
 
     if (openingDialogue.done) {
       /* After last line, Next moves to the following scene. */
-      if (state.currentScene < TOTAL_SECTIONS - 1) {
+      if (state.currentScene < CONTENT_SCENES - 1) {
         scrollToScene(state.currentScene + 1);
         return true;
       }
@@ -1390,13 +1516,15 @@
     /** Force the current scene to a given index (0-based). */
     goToScene: scrollToScene,
 
+    /** Open the surprise popup sequence. */
+    openSurprise: openSurprise,
+
     /** Reset and replay the reveal chain. */
     replayReveal: function () {
-      resetRevealChain();
-      var el = $('[data-reveal-beat="2"]');
-      if (el) {
-        el.scrollIntoView({ behavior: state.reducedMotion ? 'auto' : 'smooth', block: 'start' });
-        setTimeout(function () { triggerAnnouncementTypewriter(el); }, state.reducedMotion ? 0 : 550);
+      if (!state.surpriseOpen) openSurprise();
+      else {
+        resetRevealChain(true);
+        runSurpriseSequence();
       }
     },
 

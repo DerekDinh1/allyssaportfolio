@@ -1073,8 +1073,77 @@ html.is-presenting main > section {
 .ac-gallery__cap { font-family: var(--ac-font-ui); font-weight: 600; color: var(--ac-ink); }
 .ac-gallery__tag { align-self: flex-start; }
 
-/* ---------- 05 reveal ---------- */
+/* ---------- 05 reveal (popup surprise) ---------- */
 .reveal { display: grid; gap: var(--sp-8); }
+
+/* Off-flow until presentation opens the surprise popup */
+#reveal.reveal--popup,
+.scene--reveal.reveal--popup {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  margin: 0;
+  padding: clamp(var(--sp-5), 4vw, var(--sp-8));
+  overflow: auto;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  background: color-mix(in srgb, var(--ac-leaf) 88%, #000 12%);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(.96);
+  transition:
+    opacity var(--t-slow) var(--ease-soft),
+    transform var(--t-slow) var(--ease-bounce),
+    visibility 0s linear var(--t-slow);
+}
+#reveal.reveal--popup.is-surprise-open,
+.scene--reveal.reveal--popup.is-surprise-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition:
+    opacity var(--t-slow) var(--ease-soft),
+    transform var(--t-slow) var(--ease-bounce),
+    visibility 0s;
+}
+body.surprise-open {
+  overflow: hidden;
+}
+body.surprise-open .site-controls {
+  z-index: 75;
+}
+#reveal.reveal--popup .reveal {
+  width: min(100%, 920px);
+  gap: 0;
+}
+#reveal.reveal--popup .reveal__stage {
+  min-height: min(70vh, 640px);
+  display: none;
+  place-content: center;
+  opacity: 1;
+  transform: none;
+}
+#reveal.reveal--popup .reveal__stage.is-surprise-current {
+  display: grid;
+}
+#reveal.reveal--popup .reveal__saving {
+  width: min(100%, 560px);
+  min-height: 280px;
+  display: grid;
+  place-content: center;
+  animation: saving-pulse 1.4s var(--ease-soft) infinite;
+}
+@keyframes saving-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #reveal.reveal--popup .reveal__saving { animation: none; }
+}
+
 .reveal__stage {
   opacity: 0;
   transform: translateY(18px);
