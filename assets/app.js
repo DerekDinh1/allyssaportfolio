@@ -37,8 +37,6 @@
   var SAVING_FADE_MS = 3400;       // then slow fade out
   var SAVING_HOLD_REDUCED_MS = 900;
   var SAVING_FADE_REDUCED_MS = 400;
-  var SCENE_LEAVE_MS = 420;
-  var SCENE_ENTER_MS = 720;
 
   /* cached DOM lookups populated during boot */
   var dom = {};
@@ -53,8 +51,7 @@
     startGateDismissed: false,
     surpriseOpen: false,           // true while surprise modal is up
     savingHoldUntil: 0,            // timestamp; beat 2 waits until this
-    surpriseStep: 0,               // 0=idle, 1..5 = current surprise beat
-    sceneBusy: false               // true during game-style scene wipe
+    surpriseStep: 0                // 0=idle, 1..5 = current surprise beat
   };
 
   /* ================================================================
@@ -299,7 +296,6 @@
 
   function scrollToScene(idx) {
     if (idx < 0) return;
-    if (state.sceneBusy) return;
 
     /* From gallery forward → open surprise popup instead of scrolling to #reveal */
     if (idx >= CONTENT_SCENES) {
@@ -311,90 +307,11 @@
     if (state.surpriseOpen) closeSurprise();
 
     var id = SECTION_IDS[idx];
-    var nextEl = document.getElementById(id);
-    if (!nextEl) return;
-
-    var prevIdx = state.currentScene;
-    var prevEl = document.getElementById(SECTION_IDS[prevIdx]);
-    var goingForward = idx > prevIdx;
-
-    /* Same scene */
-    if (idx === prevIdx) {
-      setActiveScene(idx);
-      enterScene(idx);
-      return;
-    }
-
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: state.reducedMotion ? 'auto' : 'smooth', block: 'start' });
+    enterScene(idx);
     sound('select');
-
-    /* Reduced motion: instant swap */
-    if (state.reducedMotion) {
-      setActiveScene(idx);
-      enterScene(idx);
-      return;
-    }
-
-    /* Game-style wipe: leave → leaf flash → enter with bounce */
-    state.sceneBusy = true;
-    document.body.classList.add('is-scene-transitioning');
-    ensureSceneWipe();
-
-    if (prevEl) {
-      prevEl.classList.remove('is-scene-enter-fwd', 'is-scene-enter-back', 'is-scene-active');
-      prevEl.classList.add(goingForward ? 'is-scene-leave-fwd' : 'is-scene-leave-back');
-    }
-    document.body.classList.add(goingForward ? 'wipe-fwd' : 'wipe-back', 'wipe-active');
-
-    setTimeout(function () {
-      if (prevEl) {
-        prevEl.classList.remove('is-scene-leave-fwd', 'is-scene-leave-back');
-        prevEl.setAttribute('aria-hidden', 'true');
-      }
-      setActiveScene(idx);
-      nextEl.classList.add(goingForward ? 'is-scene-enter-fwd' : 'is-scene-enter-back');
-      enterScene(idx);
-
-      setTimeout(function () {
-        document.body.classList.remove('wipe-active', 'wipe-fwd', 'wipe-back');
-      }, 280);
-
-      setTimeout(function () {
-        nextEl.classList.remove('is-scene-enter-fwd', 'is-scene-enter-back');
-        document.body.classList.remove('is-scene-transitioning');
-        state.sceneBusy = false;
-      }, SCENE_ENTER_MS);
-    }, SCENE_LEAVE_MS);
-  }
-
-  /** Show only the active content scene (presentation deck). */
-  function setActiveScene(idx) {
-    for (var i = 0; i < CONTENT_SCENES; i++) {
-      var el = document.getElementById(SECTION_IDS[i]);
-      if (!el) continue;
-      if (i === idx) {
-        el.classList.add('is-scene-active');
-        el.removeAttribute('aria-hidden');
-      } else {
-        el.classList.remove('is-scene-active');
-        el.setAttribute('aria-hidden', 'true');
-      }
-    }
-  }
-
-  /** One reusable leaf wipe overlay for scene changes. */
-  function ensureSceneWipe() {
-    if (document.getElementById('scene-wipe')) return;
-    var wipe = document.createElement('div');
-    wipe.id = 'scene-wipe';
-    wipe.className = 'scene-wipe';
-    wipe.setAttribute('aria-hidden', 'true');
-    var leaf = document.createElement('img');
-    leaf.src = 'assets/leaf.svg';
-    leaf.alt = '';
-    leaf.width = 96;
-    leaf.height = 96;
-    wipe.appendChild(leaf);
-    document.body.appendChild(wipe);
   }
 
   function handleKeyDown(e) {
@@ -525,14 +442,12 @@
       dom.siteControls.hidden = false;
     }
 
-/* Begin opening sequence */
+    /* Begin opening sequence */
     state.presentationActive = true;
-    document.body.classList.add('is-presenting');
     startClock();
     updateSceneIndicator();
 
     /* Enter the opening scene */
-    setActiveScene(0);
     enterScene(0);
 
     if (gateHadFocus || document.activeElement === document.body) {
@@ -666,12 +581,12 @@
   }
 
   /**
-   * In presentation mode scenes are swapped by class, so scroll tracking
-   * is disabled. Free-scroll / reduced-motion still uses IO below.
+   * Track which content section is most on-screen (by IntersectionObserver
+   * ratio) and set currentScene to that index. The surprise section is
+   * excluded — it only appears as a popup.
    */
   function setupSceneTracking() {
     if (!('IntersectionObserver' in window)) return;
-    if (document.body.classList.contains('is-presenting')) return;
 
     var thresholds = [];
     for (var t = 0; t <= 20; t++) thresholds.push(t / 20);
@@ -685,8 +600,7 @@
       for (var e = 0; e < entries.length; e++) {
         ratios[entries[e].target.id] = entries[e].intersectionRatio;
       }
-      if (!state.presentationActive || state.surpriseOpen || state.sceneBusy) return;
-      if (document.body.classList.contains('is-presenting')) return;
+      if (!state.presentationActive || state.surpriseOpen) return;
       var bestIdx = 0;
       var bestRatio = 0;
       for (var j = 0; j < CONTENT_SCENES; j++) {
@@ -1644,10 +1558,9 @@
     if (!dom.startGate && !state.startGateDismissed) {
       state.startGateDismissed = true;
       state.presentationActive = true;
-      document.body.classList.add('is-started', 'is-presenting');
+      document.body.classList.add('is-started');
       if (dom.siteControls) dom.siteControls.hidden = false;
       startClock();
-      setActiveScene(0);
       enterScene(0);
     }
   }
