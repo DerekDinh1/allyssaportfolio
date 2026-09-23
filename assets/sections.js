@@ -50,54 +50,29 @@
     render: function (root, data, C) {
       root.textContent = '';
 
-      var bg = el('div', 'opening__bg');
-      bg.setAttribute('aria-hidden', 'true');
-      root.appendChild(bg);
+      /* Full scene: Allyssa seated behind the desk (not in a picture frame). */
+      var stage = el('div', 'opening__stage');
+      stage.setAttribute('aria-hidden', 'true');
+      var sceneImg = el('img', 'opening__scene');
+      sceneImg.src = 'assets/opening-scene.png';
+      sceneImg.alt = '';
+      sceneImg.decoding = 'async';
+      sceneImg.loading = 'eager';
+      stage.appendChild(sceneImg);
+      root.appendChild(stage);
 
       var petals = el('div', 'ac-petals');
       petals.setAttribute('aria-hidden', 'true');
-      for (var p = 0; p < 10; p++) {
+      for (var p = 0; p < 8; p++) {
         var petal = el('span', 'ac-petal');
-        petal.style.left = (5 + p * 9.4) + '%';
-        petal.style.top = (8 + (p % 4) * 22) + '%';
-        petal.style.animationDelay = (p * 0.6) + 's';
+        petal.style.left = (8 + p * 11) + '%';
+        petal.style.top = (10 + (p % 3) * 18) + '%';
+        petal.style.animationDelay = (p * 0.55) + 's';
         petals.appendChild(petal);
       }
       root.appendChild(petals);
 
       var wrap = el('div', 'ac-wrap opening__wrap');
-      var inner = el('div', 'opening__inner');
-
-      /* Allyssa seated at the office desk — first approved composite
-         (photo cutout with joyful pose; desk covers legs). */
-      var scene = el('div', 'opening__desk-scene');
-      scene.setAttribute('aria-hidden', 'false');
-
-      var chair = el('img', 'opening__chair');
-      chair.src = 'assets/chair.png';
-      chair.alt = '';
-      chair.setAttribute('aria-hidden', 'true');
-      chair.width = 320; chair.height = 420;
-      chair.decoding = 'async';
-      scene.appendChild(chair);
-
-      var fig = el('figure', 'opening__allyssa');
-      var img = el('img', 'opening__allyssa-img');
-      img.src = 'assets/allyssa-seated.png';
-      img.alt = C.get('site.portraitAlt') || 'Allyssa seated at her desk';
-      img.width = 468; img.height = 679;
-      img.loading = 'eager';
-      img.decoding = 'async';
-      fig.appendChild(img);
-      scene.appendChild(fig);
-
-      var desk = el('div', 'opening__desk-lip');
-      desk.setAttribute('aria-hidden', 'true');
-      scene.appendChild(desk);
-
-      inner.appendChild(scene);
-
-      /* Announcement box */
       var boxWrap = el('div', 'opening__box');
       var box = el('div', 'ac-box ac-box--dialog');
       var chip = el('span', 'ac-namechip', C.fill(C.get('opening.speaker')) || C.get('site.name') || '');
@@ -106,17 +81,13 @@
       var line = el('p', 'ac-box__text');
       line.setAttribute('data-opening-line', '');
       line.setAttribute('aria-live', 'polite');
-      box.appendChild(line);
 
-      /* Announcement shows immediately with live clock spans so app.js
-         can refresh .live-time / .live-date every 10s. */
       var announcement = C.get('opening.announcement');
       if (C.isBlank(announcement)) {
         line.appendChild(el('span', 'ac-empty-inline', 'Waiting to be filled in'));
         line.classList.add('is-empty');
       } else {
         var stamp = C.liveStamp();
-        /* Protect live tokens, fill the rest, then expand *emphasis* + live spans. */
         var marked = String(announcement)
           .replace(/\{time\}/g, '\u0001T\u0001')
           .replace(/\{weekday\}/g, '\u0001W\u0001')
@@ -139,23 +110,22 @@
           }
         }
       }
-      box.appendChild(el('span', 'ac-next'));
-      boxWrap.appendChild(box);
+      box.appendChild(line);
 
-      /* Dialogue lines start hidden; app.js advances them one at a time. */
       var lines = C.get('opening.dialogue');
+      /* Hidden line bank — app.js swaps these into [data-opening-line] one at a time */
       var dlg = el('div', 'opening__dialogue');
       dlg.setAttribute('data-opening-dialogue', '');
+      dlg.hidden = true;
       if (!C.isBlank(lines) && lines.length) {
         for (var i = 0; i < lines.length; i++) {
           if (C.isBlank(lines[i])) continue;
           var item = el('p', 'opening__dline');
-          item.hidden = true;
           item.appendChild(C.rich(lines[i]));
           dlg.appendChild(item);
         }
       }
-      boxWrap.appendChild(dlg);
+      box.appendChild(dlg);
 
       var prompt = el('button', 'ac-btn opening__prompt');
       prompt.type = 'button';
@@ -166,10 +136,10 @@
       var nextLabel = el('span', null, C.get('ui.next') || 'Next');
       nextLabel.setAttribute('data-content-next', '');
       prompt.appendChild(nextLabel);
-      boxWrap.appendChild(prompt);
+      box.appendChild(prompt);
 
-      inner.appendChild(boxWrap);
-      wrap.appendChild(inner);
+      boxWrap.appendChild(box);
+      wrap.appendChild(boxWrap);
       root.appendChild(wrap);
     }
   };

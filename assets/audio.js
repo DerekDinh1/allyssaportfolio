@@ -15,7 +15,9 @@
  *   ACSound.init()         — create & resume AudioContext (call on first gesture)
  *   ACSound.setMuted(bool)
  *   ACSound.isMuted()      — boolean
- *   ACSound.blip()         — per-character typewriter tick (~25-35ms)
+ *   ACSound.blip()         — dry Bebebese / UI tick (menus)
+ *   ACSound.talk(char?)    — female Animalese pulse+noise letter chirp
+ *   ACSound.resetTalk()    — reset phrase contour for a new line
  *   ACSound.select()       — soft UI click (~40ms, 600Hz)
  *   ACSound.confirm()      — happy two-note rise (major third)
  *   ACSound.cancel()       — gentle two-note fall (minor third down)
@@ -54,6 +56,29 @@
   /* polyphony cap so rapid blip() calls cannot spawn runaway nodes */
   const MAX_BLIP_NODES = 16;
   let blipCount = 0;
+
+  /*
+   * Female Animalese — concatenative pulse+noise chirps ([Research](2b39ae2e)).
+   * NOT continuous Klatt formants (robot). Hard onset per letter, ≤55ms,
+   * one bandpass color, F0 hard-reset. Allyssa peppy ~620 Hz.
+   */
+  let talkSyllable = 0;
+  let talkBaseF0 = 620;
+  const TALK_PHRASE = [0, 1, 2, 1, 0, -1, 1, 2, 1, 0, -1, -2, 0, 1];
+  const LETTER_VOWEL = {
+    a: 'a', b: 'a', c: 'o', d: 'e', e: 'e', f: 'u', g: 'o', h: 'a',
+    i: 'i', j: 'i', k: 'o', l: 'o', m: 'a', n: 'e', o: 'o', p: 'a',
+    q: 'u', r: 'o', s: 'i', t: 'e', u: 'u', v: 'u', w: 'u', x: 'i',
+    y: 'i', z: 'i'
+  };
+  /* One color peak per vowel (Hz) + Q — not 3 parallel formants; Q eased vs muddy BP */
+  const COLOR = {
+    a: { fc: 900, q: 2.6 },
+    e: { fc: 1400, q: 3.0 },
+    i: { fc: 2100, q: 3.2 },
+    o: { fc: 700, q: 2.3 },
+    u: { fc: 550, q: 2.2 }
+  };
 
   /* ── Internal helpers ──────────────────────────────────── */
 
@@ -213,40 +238,196 @@
       }
     },
 
-    setMuted: function (val) { muted = !!val; },
+    setMuted: function (val) {
+      muted = !!val;
+      /* Hard-silence ambient bed immediately so mute isn't a slow fade-only feel */
+      if (muted && ambientGain) {
+        try {
+          var c = activeCtx();
+          if (c) {
+            ambientGain.gain.cancelScheduledValues(c.currentTime);
+            ambientGain.gain.setValueAtTime(0, c.currentTime);
+          }
+        } catch (_) {}
+      }
+    },
     isMuted: function () { return muted; },
 
     /* ── UI sounds ─────────────────────────────────── */
 
     /**
-     * blip() — one typewriter tick, ~25-35ms, triangle through a bandpass
-     * around 900–1400Hz with small random pitch variance. Gain ~0.05.
-     * Extremely cheap and never clicks thanks to the zero-start ramp.
+     * blip() — Bebebese / UI tick only (menus, dry click).
+     * NOT villager talk — keep dry and short.
      */
     blip: function () {
       if (!activeCtx() || muted) return;
-      if (blipCount >= MAX_BLIP_NODES) return;
-
-      const f = 950 + Math.random() * 450;          // 950–1400 Hz
       tone({
         type: 'triangle',
-        freq: f,
-        gain: 0.05,
-        attack: 0.0015,
-        hold: 0.016 + Math.random() * 0.012,        // 16–28 ms body
-        release: 0.008 + Math.random() * 0.007,     // 8–15 ms tail
-        detune: (Math.random() - 0.5) * 80,         // ±40 cents
-        filterType: 'bandpass',
-        filterFreq: f,
-        filterQ: 2.6,
+        freq: 720 + Math.random() * 80,
+        gain: 0.09,
+        attack: 0.002,
+        hold: 0.012,
+        release: 0.02,
+        filterType: 'lowpass',
+        filterFreq: 1600,
+        filterQ: 0.5,
         tag: 'blip'
       });
     },
 
-    /** select() — soft UI click, triangle around 600Hz, ~40ms, fast decay. */
+    /**
+     * talk(char?) — female Animalese letter chirp ([Research](2b39ae2e)).
+     * Triangle+sine → one BP color → LP. Hard AD, ≤55ms, F0 hard-reset.
+     * No continuous formants. Silence on punctuation.
+     */
+    talk: function (char) {
+      if (!activeCtx() || muted) return;
+      if (blipCount >= MAX_BLIP_NODES) return;
+
+      try {
+        const c = activeCtx();
+        const raw = (char && String(char).length) ? String(char).charAt(0) : '';
+        const ch = raw.toLowerCase();
+        if (!ch || /[.,!?;:'"…\s]/.test(ch)) return;
+
+        talkSyllable++;
+        const phrase = TALK_PHRASE[talkSyllable % TALK_PHRASE.length];
+        const jitter = (Math.random() - 0.5) * 2.8; /* ±1.4 st */
+        const f0 = talkBaseF0 * Math.pow(2, (phrase + jitter) / 12);
+        const fallCents = 40 + Math.random() * 50;
+        const fEnd = f0 * Math.pow(2, -fallCents / 1200);
+
+        let vowelKey = LETTER_VOWEL[ch] || 'a';
+        if (/[aeiou]/.test(ch)) vowelKey = ch;
+        const color = COLOR[vowelKey] || COLOR.a;
+        const unvoiced = /[ptkfsc]/.test(ch);
+        const voicedCons = /[bdgvzhmnlrwj]/.test(ch);
+        const isVowel = /[aeiou]/.test(ch);
+
+        let dur = 0.048 + Math.random() * 0.007;
+        if (unvoiced) dur = Math.max(0.04, dur - 0.004);
+        if (isVowel) dur = Math.min(0.055, dur + 0.004);
+
+        let fc = color.fc * (unvoiced ? 1.05 : 1);
+        if (raw !== ch) fc *= Math.pow(2, 80 / 1200); /* uppercase bump */
+
+        const t0 = c.currentTime;
+        const bodyDelay = unvoiced ? 0.008 : (voicedCons ? 0.004 : 0);
+        blipCount++;
+
+        const master = c.createGain();
+        master.gain.setValueAtTime(0.0001, t0);
+        master.gain.linearRampToValueAtTime(0.25, t0 + 0.0025);
+        master.gain.setValueAtTime(0.25, t0 + Math.max(0.003, dur - 0.012));
+        master.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+        master.connect(c.destination);
+
+        const lp = c.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(5000, t0);
+        lp.Q.setValueAtTime(0.5, t0);
+        lp.connect(master);
+
+        const bp = c.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(fc, t0);
+        bp.Q.setValueAtTime(color.q, t0);
+        bp.connect(lp);
+
+        const voiceStart = t0 + bodyDelay;
+        const tri = c.createOscillator();
+        tri.type = 'triangle';
+        tri.frequency.setValueAtTime(f0, voiceStart);
+        tri.frequency.linearRampToValueAtTime(fEnd, t0 + dur);
+
+        const sine = c.createOscillator();
+        sine.type = 'sine';
+        sine.frequency.setValueAtTime(f0 * 2, voiceStart);
+        sine.frequency.linearRampToValueAtTime(fEnd * 2, t0 + dur);
+
+        const triG = c.createGain();
+        triG.gain.value = 0.55;
+        const sineG = c.createGain();
+        sineG.gain.value = 0.18;
+
+        tri.connect(triG);
+        sine.connect(sineG);
+        triG.connect(bp);
+        sineG.connect(bp);
+
+        let noiseSrc = null, noiseFlt = null, noiseG = null;
+        const doNoise = unvoiced || (voicedCons && Math.random() < 0.4);
+        if (doNoise) {
+          const nDur = unvoiced ? (0.01 + Math.random() * 0.004) : (0.004 + Math.random() * 0.004);
+          const buf = c.createBuffer(1, Math.ceil(c.sampleRate * nDur), c.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+          noiseSrc = c.createBufferSource();
+          noiseSrc.buffer = buf;
+          noiseFlt = c.createBiquadFilter();
+          noiseFlt.type = 'highpass';
+          noiseFlt.frequency.setValueAtTime(unvoiced ? 2200 + Math.random() * 1000 : 1400 + Math.random() * 400, t0);
+          noiseG = c.createGain();
+          noiseG.gain.setValueAtTime(0.0001, t0);
+          noiseG.gain.linearRampToValueAtTime(unvoiced ? 0.048 : 0.028, t0 + 0.0015);
+          noiseG.gain.linearRampToValueAtTime(0.0001, t0 + nDur);
+          noiseSrc.connect(noiseFlt);
+          noiseFlt.connect(noiseG);
+          noiseG.connect(lp);
+          noiseSrc.start(t0);
+          noiseSrc.stop(t0 + nDur + 0.015);
+        }
+
+        tri.start(voiceStart);
+        sine.start(voiceStart);
+        tri.stop(t0 + dur + 0.02);
+        sine.stop(t0 + dur + 0.02);
+
+        tri.onended = function () {
+          try { tri.disconnect(); } catch (_) {}
+          try { sine.disconnect(); } catch (_) {}
+          try { triG.disconnect(); } catch (_) {}
+          try { sineG.disconnect(); } catch (_) {}
+          try { bp.disconnect(); } catch (_) {}
+          try { lp.disconnect(); } catch (_) {}
+          try { master.disconnect(); } catch (_) {}
+          if (noiseSrc) try { noiseSrc.disconnect(); } catch (_) {}
+          if (noiseFlt) try { noiseFlt.disconnect(); } catch (_) {}
+          if (noiseG) try { noiseG.disconnect(); } catch (_) {}
+          blipCount = Math.max(0, blipCount - 1);
+        };
+      } catch (e) {
+        blipCount = Math.max(0, blipCount - 1);
+        try {
+          tone({
+            type: 'triangle',
+            freq: 620 + Math.random() * 60,
+            gain: 0.18,
+          });
+        } catch (_) {}
+      }
+    },
+
+    /** Reset talk phrase contour (call at start of a new dialogue line). */
+    resetTalk: function () {
+      talkSyllable = 0;
+      talkBaseF0 = 605 + Math.random() * 30; /* 605–635 Hz, cute not shrill */
+    },
+
+    /** select() — soft UI click (menu / A press), NOT talk. */
     select: function () {
       if (!activeCtx() || muted) return;
-      tone({ type: 'triangle', freq: 600, gain: 0.1, attack: 0.002, hold: 0.018, release: 0.022 });
+      tone({
+        type: 'triangle',
+        freq: 680,
+        gain: 0.135,
+        attack: 0.002,
+        hold: 0.014,
+        release: 0.028,
+        filterType: 'lowpass',
+        filterFreq: 1800,
+        filterQ: 0.6
+      });
     },
 
     /** confirm() — happy two-note rise, a major third apart (C5 → E5). */
@@ -254,8 +435,8 @@
       if (!activeCtx() || muted) return;
       const c = activeCtx();
       const now = c.currentTime;
-      pluckNote(523.25, now, 0.16);          // C5
-      pluckNote(659.25, now + 0.09, 0.18);   // E5
+      pluckNote(523.25, now, 0.24);          // C5
+      pluckNote(659.25, now + 0.09, 0.27);   // E5
     },
 
     /** cancel() — gentle two-note fall, a minor third down (E5 → C#5). */
@@ -263,17 +444,17 @@
       if (!activeCtx() || muted) return;
       const c = activeCtx();
       const now = c.currentTime;
-      pluckNote(659.25, now, 0.14);          // E5
-      pluckNote(554.37, now + 0.09, 0.13);   // C#5
+      pluckNote(659.25, now, 0.21);          // E5
+      pluckNote(554.37, now + 0.09, 0.195);  // C#5
     },
 
     /** stamp() — low sine thump + a short filtered noise burst. */
     stamp: function () {
       if (!activeCtx() || muted) return;
-      tone({ type: 'sine', freq: 120, gain: 0.26, attack: 0.002, hold: 0.06, release: 0.09 });
+      tone({ type: 'sine', freq: 120, gain: 0.38, attack: 0.002, hold: 0.06, release: 0.09 });
       tone({
-        type: 'triangle', freq: 300, gain: 0.05, attack: 0.001, hold: 0.012, release: 0.04,
-        noiseGain: 0.12, noiseHold: 0.025, noiseRelease: 0.05
+        type: 'triangle', freq: 300, gain: 0.075, attack: 0.001, hold: 0.012, release: 0.04,
+        noiseGain: 0.18, noiseHold: 0.025, noiseRelease: 0.05
       });
     },
 
@@ -285,7 +466,7 @@
       const c = activeCtx();
       const now = c.currentTime;
       for (let i = 0; i < notes.length; i++) {
-        pluckNote(notes[i], now + i * step, 0.18, (Math.random() - 0.5) * 6);
+        pluckNote(notes[i], now + i * step, 0.27, (Math.random() - 0.5) * 6);
       }
     },
 
@@ -307,7 +488,7 @@
       /* master bed gain — silent start, fade in over ~1.5s */
       ambientGain = c.createGain();
       ambientGain.gain.setValueAtTime(0, now);
-      ambientGain.gain.linearRampToValueAtTime(0.12, now + 1.5);
+      ambientGain.gain.linearRampToValueAtTime(0.17, now + 1.5);
       ambientGain.connect(c.destination);
 
       /* --- build the one-loop timeline ----------------------- */
@@ -504,7 +685,7 @@
 
    Typewriter (one tick per character):
      text.split('').forEach(function (ch, i) {
-       setTimeout(function () { el.textContent += ch; ACSound.blip(); }, i * 35);
+       setTimeout(function () { el.textContent += ch; ACSound.talk(ch); }, i * 55);
      });
 
    UI feedback:

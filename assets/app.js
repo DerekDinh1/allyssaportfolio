@@ -30,13 +30,10 @@
 
   var SECTION_IDS = ['opening', 'daily', 'stats', 'gallery', 'reveal'];
   var TOTAL_SECTIONS = SECTION_IDS.length;
-  /* Content scenes shown in presentation nav (surprise is a popup, not a slide). */
-  var CONTENT_SCENES = 4;
   var CLOCK_INTERVAL_MS = 10000;   // update live clock every 10 s
-  var SAVING_HOLD_MS = 5000;       // Saving... stays fully visible
-  var SAVING_FADE_MS = 3400;       // then slow fade out
-  var SAVING_HOLD_REDUCED_MS = 900;
-  var SAVING_FADE_REDUCED_MS = 400;
+  var SAVING_HOLD_MS = 5000;       // Saving stays fully visible
+  var SAVING_FADE_MS = 3400;       // then slow fade before surprise
+  var WIPE_HALF_MS = 380;          // leaf wipe mid-point for scene swap
 
   /* cached DOM lookups populated during boot */
   var dom = {};
@@ -49,9 +46,11 @@
     clockTimer: null,
     reducedMotion: false,
     startGateDismissed: false,
-    surpriseOpen: false,           // true while surprise modal is up
-    savingHoldUntil: 0,            // timestamp; beat 2 waits until this
-    surpriseStep: 0                // 0=idle, 1..5 = current surprise beat
+    sceneTransitioning: false,
+    savingTimer: null,
+    surpriseOpened: false,
+    surpriseBeatIndex: 0,
+    surpriseBeats: []
   };
 
   /* ================================================================
@@ -68,11 +67,12 @@
     return (root || document).querySelectorAll(sel);
   }
 
-  /** Guarded ACSound call. Never throws. */
-  function sound(method) {
+  /** Guarded ACSound call. Never throws. Optional arg for talk(char). */
+  function sound(method, arg) {
     try {
       if (window.ACSound && typeof window.ACSound[method] === 'function') {
-        window.ACSound[method]();
+        if (arg !== undefined) window.ACSound[method](arg);
+        else window.ACSound[method]();
       }
     } catch (e) { /* audio is best-effort */ }
   }
@@ -199,7 +199,7 @@
    */
   function typewriter(el, segments, speedMs, done, skipIfReduced) {
     if (skipIfReduced === undefined) skipIfReduced = true;
-    speedMs = speedMs || 60;
+    speedMs = speedMs || 55; /* Match Animalese syllable (~60–80ms) */
 
     var timer = null;
     var cancelled = false;
@@ -253,6 +253,7 @@
     }
 
     el.classList.add('ac-caret');
+    sound('resetTalk');
 
     var si = 0, ci = 0;
     (function tick() {
@@ -267,10 +268,13 @@
       ci++;
       node.el.textContent = t.slice(0, ci);
       var ch = t.charAt(ci - 1);
-      /* blip on non-space, non-newline characters */
-      if (ch && ch !== ' ' && ch !== '\n') sound('blip');
+      /* Animalese talk on letters; pause on punctuation (no voice) */
+      if (ch && ch !== ' ' && ch !== '\n' && !/[.,!?;:'"…]/.test(ch)) {
+        if (window.ACSound && typeof ACSound.talk === 'function') sound('talk', ch);
+        else sound('blip');
+      }
       if (ci >= t.length) { si++; ci = 0; }
-      var delay = /[!.,;:?\n]/.test(ch) ? speedMs * 3 : speedMs;
+      var delay = /[!.,;:?\n]/.test(ch) ? speedMs * 3.5 : (ch === ' ' ? speedMs * 1.4 : speedMs);
       timer = setTimeout(tick, delay);
     })();
 
@@ -286,121 +290,177 @@
     var idx = state.currentScene;
     var el = dom.sceneProgress;
     if (!el) return;
-    /* Presentation counts content scenes only (surprise is a popup). */
-    var shown = Math.min(idx + 1, CONTENT_SCENES);
-    var total = CONTENT_SCENES;
-    var num = String(shown);
+    var num = String(idx + 1);
     el.innerHTML = (num.length === 1 ? '0' + num : num) +
-                   ' <small>/ ' + (total < 10 ? '0' + total : total) + '</small>';
+                   ' <small>/ ' + (TOTAL_SECTIONS < 10 ? '0' + TOTAL_SECTIONS : TOTAL_SECTIONS) + '</small>';
   }
 
-  function scrollToScene(idx) {
-    if (idx < 0) return;
+  /** Toggle .is-active on scene sections (presentation deck). */
+  function activateSceneSlide(idx) {
+    for (var i = 0; i < TOTAL_SECTIONS; i++) {
+      var sec = document.getElementById(SECTION_IDS[i]);
+      if (!sec) continue;
+      if (i === idx) sec.classList.add('is-active');
+      else sec.classList.remove('is-active');
+    }
+  }
 
-    /* From gallery forward → open surprise popup instead of scrolling to #reveal */
-    if (idx >= CONTENT_SCENES) {
-      openSurprise();
+  /** Soft leaf wipe, then swap the active scene. */
+  function goToScene(idx, opts) {
+    opts = opts || {};
+    if (idx < 0 || idx >= TOTAL_SECTIONS) return;
+    if (idx === state.currentScene && !opts.force) return;
+    if (state.sceneTransitioning) return;
+
+    var apply = function () {
+      activateSceneSlide(idx);
+      enterScene(idx);
+      if (!opts.silent) sound('select');
+    };
+
+    if (state.reducedMotion || opts.instant) {
+      apply();
       return;
     }
 
-    /* Leaving surprise */
-    if (state.surpriseOpen) closeSurprise();
+    state.sceneTransitioning = true;
+    var wipe = dom.sceneWipe || document.getElementById('scene-wipe');
+    if (!wipe) {
+      apply();
+      state.sceneTransitioning = false;
+      return;
+    }
 
-    var id = SECTION_IDS[idx];
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.scrollIntoView({ behavior: state.reducedMotion ? 'auto' : 'smooth', block: 'start' });
-    enterScene(idx);
-    sound('select');
+    wipe.hidden = false;
+    wipe.setAttribute('aria-hidden', 'false');
+    /* force reflow so transition runs */
+    void wipe.offsetWidth;
+    wipe.classList.add('is-on');
+
+    setTimeout(function () {
+      apply();
+      wipe.classList.remove('is-on');
+      setTimeout(function () {
+        wipe.hidden = true;
+        wipe.setAttribute('aria-hidden', 'true');
+        state.sceneTransitioning = false;
+      }, WIPE_HALF_MS);
+    }, WIPE_HALF_MS);
+  }
+
+  function scrollToScene(idx) {
+    goToScene(idx);
+  }
+
+  /**
+   * Primary advance (A / Space / Enter): click the on-screen A button
+   * when one is visible, otherwise surprise → opening dialogue → next scene.
+   */
+  function isAdvanceKey(e) {
+    var key = e.key;
+    var code = e.code || '';
+    return key === ' ' || key === 'Spacebar' || code === 'Space' ||
+           key === 'Enter' || code === 'Enter' ||
+           key === 'a' || key === 'A' || code === 'KeyA';
+  }
+
+  function clickVisibleAdvanceButton() {
+    if (state.surpriseOpened) {
+      var surpriseBtn = document.querySelector('#surprise-popup:not([hidden]) [data-surprise-next]');
+      if (surpriseBtn) {
+        surpriseBtn.click();
+        return true;
+      }
+    }
+    if (state.currentScene === 0) {
+      var openBtn = document.querySelector('#opening.is-active [data-opening-next], #opening.is-active .opening__prompt');
+      if (!openBtn) {
+        openBtn = document.querySelector('#opening [data-opening-next], #opening .opening__prompt');
+      }
+      if (openBtn) {
+        openBtn.click();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function advancePrimary() {
+    if (clickVisibleAdvanceButton()) return true;
+    if (state.surpriseOpened) {
+      advanceSurpriseBeat();
+      return true;
+    }
+    if (state.currentScene === 0) {
+      if (advanceOpeningDialogue()) return true;
+    }
+    if (state.currentScene < TOTAL_SECTIONS - 1) {
+      scrollToScene(state.currentScene + 1);
+      return true;
+    }
+    return false;
   }
 
   function handleKeyDown(e) {
-    /* Don't intercept when focus is inside a form control, unless it's
-       a dedicated navigation key (ArrowLeft/ArrowRight/PageUp/PageDown) */
     var tag = (document.activeElement && document.activeElement.tagName || '').toLowerCase();
-    var isForm = (tag === 'input' || tag === 'textarea' || tag === 'select' ||
-                  (document.activeElement && document.activeElement.isContentEditable));
+    var isTextField = (tag === 'input' || tag === 'textarea' || tag === 'select' ||
+                       (document.activeElement && document.activeElement.isContentEditable));
     var key = e.key;
+    var code = e.code || '';
 
-    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
 
-    /* Before the start gate is dismissed, only the start keys do anything.
-       (Prevents Space on the gate from also skipping past the opening.) */
+    /* Start gate */
     if (!state.startGateDismissed) {
-      if (key === 'Enter' || key === ' ' || key === 'a' || key === 'A') {
+      if (isAdvanceKey(e)) {
         e.preventDefault();
+        e.stopPropagation();
         dismissStartGate();
       }
       return;
     }
 
-    /* Space/Enter on a focused control, or inside a dialogue box, belongs
-       to that element (BUILD.md §4d: sections handle dialogue advance). */
-    if (key === ' ') {
-      var ae = document.activeElement;
-      var interactive = ae && ae !== document.body &&
-        (/^(button|a|summary)$/i.test(ae.tagName) ||
-         (ae.closest && ae.closest('.ac-box, [role="button"], [data-dialogue]')));
-      if (interactive) return;
-    }
+    if (isTextField) return;
 
-    /* Navigation keys always work even in form fields, because there
-       are no form fields in this site that need arrow navigation. */
-    if (isForm && key !== 'ArrowRight' && key !== 'ArrowLeft' &&
-        key !== 'PageDown' && key !== 'PageUp') {
+    /* X / Y mute — matches on-screen sound toggle chip */
+    if (code === 'KeyX' || key === 'x' || key === 'X' ||
+        code === 'KeyY' || key === 'y' || key === 'Y') {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleMute();
       return;
     }
 
-    switch (key) {
-      case 'ArrowRight':
-      case 'PageDown':
-      case ' ':
-        if (key === ' ' && isForm) return;
-        e.preventDefault();
-        if (state.surpriseOpen) {
-          advanceSurprise();
-          return;
-        }
-        /* Space acts like A on the opening: advance dialogue first */
-        if (key === ' ' && state.currentScene === 0 && advanceOpeningDialogue()) {
-          return;
-        }
-        if (state.currentScene < CONTENT_SCENES - 1) {
-          scrollToScene(state.currentScene + 1);
-        } else if (state.currentScene === CONTENT_SCENES - 1) {
-          openSurprise();
-        }
-        break;
-      case 'ArrowLeft':
-      case 'PageUp':
-        e.preventDefault();
-        if (state.surpriseOpen) {
-          closeSurprise();
-          scrollToScene(CONTENT_SCENES - 1);
-          return;
-        }
-        if (state.currentScene > 0) {
-          scrollToScene(state.currentScene - 1);
-        }
-        break;
-      case 'a':
-      case 'A':
-        if (!state.startGateDismissed) {
-          dismissStartGate();
-          return;
-        }
-        if (state.surpriseOpen) {
+    if (code === 'ArrowRight' || key === 'ArrowRight' ||
+        code === 'PageDown' || key === 'PageDown') {
+      e.preventDefault();
+      if (state.surpriseOpened) advanceSurpriseBeat();
+      else if (state.currentScene < TOTAL_SECTIONS - 1) scrollToScene(state.currentScene + 1);
+      return;
+    }
+
+    if (code === 'ArrowLeft' || key === 'ArrowLeft' ||
+        code === 'PageUp' || key === 'PageUp') {
+      e.preventDefault();
+      if (!state.surpriseOpened && state.currentScene > 0) scrollToScene(state.currentScene - 1);
+      return;
+    }
+
+    if (isAdvanceKey(e)) {
+      /* Focused mute / edit controls must not be stolen by A/Space advance */
+      var ae = document.activeElement;
+      if (ae && ae.closest && ae.closest('.sound-toggle, .edit-link, .site-controls a')) {
+        if (ae.closest('.sound-toggle')) {
           e.preventDefault();
-          advanceSurprise();
-          return;
+          e.stopPropagation();
+          toggleMute();
         }
-        if (state.currentScene === 0 && advanceOpeningDialogue()) {
-          e.preventDefault();
-          return;
-        }
-        break;
-      default:
-        break;
+        return;
+      }
+      /* Capture Space before focused A buttons swallow it; still "press A". */
+      e.preventDefault();
+      e.stopPropagation();
+      advancePrimary();
     }
   }
 
@@ -451,8 +511,11 @@
     startClock();
     updateSceneIndicator();
 
-    /* Enter the opening scene */
-    enterScene(0);
+    /* Enter the opening scene as the first deck slide */
+    goToScene(0, { instant: true, silent: true, force: true });
+
+    /* ACNH talk: type the morning announcement with blips */
+    setTimeout(function () { startOpeningLineTypewriter(); }, state.reducedMotion ? 0 : 280);
 
     if (gateHadFocus || document.activeElement === document.body) {
       var target = document.getElementById('opening') || dom.main;
@@ -513,28 +576,42 @@
      MUTE TOGGLE
      ================================================================ */
 
+  function toggleMute() {
+    var turningOff = !state.muted;
+    state.muted = !state.muted;
+    storageSet('muted', String(state.muted));
+    updateMuteUI();
+    try {
+      if (!window.ACSound) return;
+      if (turningOff) {
+        /* Click feedback while still audible, then hard mute */
+        if (typeof ACSound.select === 'function' && !ACSound.isMuted()) ACSound.select();
+        if (typeof ACSound.setMuted === 'function') ACSound.setMuted(true);
+        if (state.startGateDismissed && typeof ACSound.stopAmbient === 'function') {
+          ACSound.stopAmbient();
+        }
+      } else {
+        if (typeof ACSound.setMuted === 'function') ACSound.setMuted(false);
+        if (state.startGateDismissed && typeof ACSound.startAmbient === 'function') {
+          ACSound.startAmbient();
+        }
+        if (typeof ACSound.select === 'function') ACSound.select();
+      }
+    } catch (e) { /* audio best-effort */ }
+  }
+
   function setupMuteToggle() {
     var btn = dom.soundToggle;
     if (!btn) return;
 
-    /* Restore persisted mute state */
+    /* Restore persisted mute state (applied to ACSound on start-gate dismiss) */
     state.muted = storageGet('muted', 'false') === 'true';
     updateMuteUI();
 
-    btn.addEventListener('click', function () {
-      state.muted = !state.muted;
-      storageSet('muted', String(state.muted));
-      updateMuteUI();
-      try {
-        if (window.ACSound && typeof ACSound.setMuted === 'function') {
-          ACSound.setMuted(state.muted);
-          if (state.startGateDismissed) {
-            if (state.muted && typeof ACSound.stopAmbient === 'function') ACSound.stopAmbient();
-            if (!state.muted && typeof ACSound.startAmbient === 'function') ACSound.startAmbient();
-          }
-        }
-      } catch (e) {}
-      sound('select');
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleMute();
     });
   }
 
@@ -550,18 +627,16 @@
     if (label) {
       label.textContent = state.muted ? (ui.soundOn || 'Sound on') : (ui.soundOff || 'Sound off');
     }
-    if (btn) {
-      btn.setAttribute('aria-pressed', String(state.muted));
-    }
+    btn.setAttribute('aria-pressed', String(state.muted));
+    btn.setAttribute('aria-label', state.muted ? (ui.soundOn || 'Sound on') : (ui.soundOff || 'Sound off'));
     if (keyEl) {
-      /* Show X key when sound is off (muted=true => "press X for sound on")
-         or when sound is on (muted=false => "press X for sound off").
-         The mockup shows the X key chip always present, just the label changes. */
       keyEl.textContent = 'X';
+      keyEl.classList.remove('ac-key--y');
+      keyEl.classList.add('ac-key--x');
       if (state.muted) {
         keyEl.style.background = 'var(--ac-ink-soft)';
       } else {
-        keyEl.style.background = 'var(--ac-btn-x)';
+        keyEl.style.background = '';
       }
     }
   }
@@ -571,9 +646,24 @@
      ================================================================ */
 
   function enterScene(idx) {
-    if (idx < 0 || idx >= CONTENT_SCENES) return;
+    if (idx < 0 || idx >= TOTAL_SECTIONS) return;
+    var prev = state.currentScene;
     state.currentScene = idx;
     updateSceneIndicator();
+    activateSceneSlide(idx);
+
+    /* Opening owns the lower third — park chrome top-right while there */
+    if (idx === 0) {
+      document.body.classList.add('is-on-opening');
+      if (prev !== 0) resetOpeningDialogueState(true);
+    } else {
+      document.body.classList.remove('is-on-opening');
+    }
+
+    /* Leaving reveal: cancel pending Saving timers */
+    if (prev === TOTAL_SECTIONS - 1 && idx !== prev) {
+      clearSavingSequence();
+    }
 
     /* Call the section's enter() if it exists */
     var key = SECTION_IDS[idx];
@@ -582,47 +672,18 @@
         ACSections[key].enter();
       } catch (e) { /* section code is defensive */ }
     }
+
+    /* Reveal scene: timed Saving → surprise popup (not in-page scroll) */
+    if (key === 'reveal') {
+      startSavingSequence();
+    }
   }
 
   /**
-   * Track which content section is most on-screen (by IntersectionObserver
-   * ratio) and set currentScene to that index. The surprise section is
-   * excluded — it only appears as a popup.
+   * Deck presentation changes scenes via goToScene only — no scroll tracking.
    */
   function setupSceneTracking() {
-    if (!('IntersectionObserver' in window)) return;
-
-    var thresholds = [];
-    for (var t = 0; t <= 20; t++) thresholds.push(t / 20);
-
-    var ratios = {};
-    for (var i = 0; i < CONTENT_SCENES; i++) {
-      ratios[SECTION_IDS[i]] = 0;
-    }
-
-    var io = new IntersectionObserver(function (entries) {
-      for (var e = 0; e < entries.length; e++) {
-        ratios[entries[e].target.id] = entries[e].intersectionRatio;
-      }
-      if (!state.presentationActive || state.surpriseOpen) return;
-      var bestIdx = 0;
-      var bestRatio = 0;
-      for (var j = 0; j < CONTENT_SCENES; j++) {
-        var r = ratios[SECTION_IDS[j]] || 0;
-        if (r > bestRatio) {
-          bestRatio = r;
-          bestIdx = j;
-        }
-      }
-      if (bestRatio > 0 && bestIdx !== state.currentScene) {
-        enterScene(bestIdx);
-      }
-    }, { threshold: thresholds });
-
-    for (var k = 0; k < CONTENT_SCENES; k++) {
-      var el = document.getElementById(SECTION_IDS[k]);
-      if (el) io.observe(el);
-    }
+    /* no-op under deck presentation; kept for API compatibility */
   }
 
   /* ================================================================
@@ -777,246 +838,206 @@
   }
 
   /* ================================================================
-     SURPRISE POPUP + REVEAL CHAIN
+     REVEAL: Saving hold → fade → surprise popup + confetti
      ================================================================ */
 
-  /**
-   * Surprise is not a scroll section in presentation — it pops over
-   * the page. Saving... holds on screen longer before the next beat.
-   */
-  function openSurprise() {
-    var root = document.getElementById('reveal');
-    if (!root || state.surpriseOpen) return;
-
-    state.surpriseOpen = true;
-    state.surpriseStep = 0;
-    sound('select');
-
-    root.classList.add('is-surprise-open');
-    root.setAttribute('role', 'dialog');
-    root.setAttribute('aria-modal', 'true');
-    root.removeAttribute('hidden');
-    document.body.classList.add('surprise-open');
-
-    /* Reset beats then run the sequenced popup show */
-    resetRevealChain(true);
-    runSurpriseSequence();
-
-    try {
-      root.focus({ preventScroll: true });
-    } catch (e) {
-      try { root.focus(); } catch (e2) {}
+  function clearSavingSequence() {
+    if (state.savingTimer) {
+      clearTimeout(state.savingTimer);
+      state.savingTimer = null;
+    }
+    var saving = $('[data-reveal-beat="1"]');
+    if (saving) {
+      saving.classList.remove('is-hold', 'is-fade', 'is-in');
     }
   }
 
-  function closeSurprise() {
-    var root = document.getElementById('reveal');
-    state.surpriseOpen = false;
-    state.surpriseStep = 0;
-    state.savingHoldUntil = 0;
-    clearSurpriseTimers();
-    document.body.classList.remove('surprise-open');
-    if (root) {
-      root.classList.remove('is-surprise-open');
-      root.removeAttribute('aria-modal');
+  function closeSurprisePopup() {
+    var popup = dom.surprisePopup || document.getElementById('surprise-popup');
+    if (!popup) return;
+    popup.classList.remove('is-in');
+    popup.hidden = true;
+    popup.setAttribute('aria-hidden', 'true');
+    state.surpriseOpened = false;
+    state.surpriseBeatIndex = 0;
+    state.surpriseBeats = [];
+    var body = popup.querySelector('[data-surprise-body]');
+    if (body) body.textContent = '';
+    var conf = popup.querySelector('[data-surprise-confetti]');
+    if (conf) conf.textContent = '';
+  }
+
+  function updateSurpriseProgress() {
+    var popup = dom.surprisePopup || document.getElementById('surprise-popup');
+    if (!popup) return;
+    var prog = popup.querySelector('[data-surprise-progress]');
+    var label = popup.querySelector('[data-surprise-next-label]');
+    var total = state.surpriseBeats.length || 1;
+    var cur = Math.min(state.surpriseBeatIndex + 1, total);
+    if (prog) prog.textContent = cur + ' / ' + total;
+    if (label) {
+      var C = window.ACContent;
+      var nextTxt = (C && C.get('ui.next')) || 'Next';
+      var doneTxt = (C && C.get('ui.replay')) || 'Play it again';
+      label.textContent = (state.surpriseBeatIndex >= total - 1) ? doneTxt : nextTxt;
     }
   }
 
-  function scheduleSurprise(fn, ms) {
-    if (!state.surpriseTimers) state.surpriseTimers = [];
-    state.surpriseTimers.push(setTimeout(fn, ms));
-  }
+  function showSurpriseBeat(idx) {
+    var beats = state.surpriseBeats;
+    if (!beats.length) return;
+    idx = Math.max(0, Math.min(idx, beats.length - 1));
+    state.surpriseBeatIndex = idx;
 
-  /** Advance to next surprise beat (A / Space / click while popup open). */
-  function advanceSurprise() {
-    if (!state.surpriseOpen) return;
-    /* During Saving hold/fade: skip straight to the announcement pop */
-    if (state.surpriseStep === 1) {
-      clearSurpriseTimers();
-      finishSavingIntoAnnouncement();
-      return;
+    for (var i = 0; i < beats.length; i++) {
+      if (i === idx) beats[i].classList.add('is-show');
+      else beats[i].classList.remove('is-show');
     }
-    if (state.surpriseStep >= 5) return;
-    showSurpriseBeat(state.surpriseStep + 1);
-  }
+    updateSurpriseProgress();
 
-  function clearSurpriseTimers() {
-    if (!state.surpriseTimers) return;
-    for (var i = 0; i < state.surpriseTimers.length; i++) {
-      clearTimeout(state.surpriseTimers[i]);
-    }
-    state.surpriseTimers = [];
-  }
-
-  /**
-   * Saving... → long fade → announcement pops with confetti from behind.
-   */
-  function finishSavingIntoAnnouncement() {
-    var root = document.getElementById('reveal');
-    if (!root) return;
-    var saving = $('[data-reveal-beat="1"]', root);
-    if (!saving || state.surpriseStep !== 1) {
-      showSurpriseBeat(2);
-      return;
-    }
-
-    var fade = state.reducedMotion ? SAVING_FADE_REDUCED_MS : SAVING_FADE_MS;
-    saving.classList.add('is-saving-fade');
-    state.savingHoldUntil = Date.now() + fade;
-
-    scheduleSurprise(function () {
-      if (!state.surpriseOpen) return;
-      saving.classList.remove('is-saving-fade', 'is-surprise-current', 'is-in', 'is-armed');
-      saving.setAttribute('hidden', '');
-      showAnnouncementWithBlast();
-    }, fade);
-  }
-
-  function showAnnouncementWithBlast() {
-    var root = document.getElementById('reveal');
-    if (!root) return;
-    var beat = $('[data-reveal-beat="2"]', root);
-    if (!beat) return;
-
-    var all = $$('[data-reveal-beat]', root);
-    for (var i = 0; i < all.length; i++) {
-      all[i].classList.remove('is-in', 'is-armed', 'is-surprise-current', 'is-pop-in', 'is-saving-fade');
-      if (parseInt(all[i].getAttribute('data-reveal-beat'), 10) !== 2) {
-        all[i].setAttribute('hidden', '');
-      } else {
-        all[i].removeAttribute('hidden');
-      }
-    }
-
-    state.surpriseStep = 2;
-    state.savingHoldUntil = 0;
-
-    /* Confetti layer sits behind the dialogue card */
-    var blast = $('.reveal__blast', beat);
-    if (!blast) {
-      blast = document.createElement('div');
-      blast.className = 'reveal__blast reveal-confetti';
-      blast.setAttribute('data-confetti', '');
-      blast.setAttribute('aria-hidden', 'true');
-      beat.insertBefore(blast, beat.firstChild);
+    var beat = beats[idx];
+    var num = beat.getAttribute('data-reveal-beat');
+    if (num === '2') {
+      sound('select');
+      triggerAnnouncementTypewriter(beat);
+    } else if (num === '3') {
+      sound('select');
+      setTimeout(function () { sound('stamp'); }, state.reducedMotion ? 0 : 400);
+      setTimeout(function () { sound('fanfare'); }, state.reducedMotion ? 150 : 900);
+    } else if (num === '5') {
+      sound('fanfare');
     } else {
-      blast.textContent = '';
+      sound('select');
     }
-
-    beat.classList.add('is-armed', 'is-in', 'is-surprise-current', 'is-pop-in');
-    sound('fanfare');
-    spawnConfetti(beat);
-    triggerAnnouncementTypewriter(beat);
   }
 
-  function showSurpriseBeat(num) {
-    var root = document.getElementById('reveal');
-    if (!root) return;
-    var beat = $('[data-reveal-beat="' + num + '"]', root);
-    if (!beat) return;
+  function advanceSurpriseBeat() {
+    if (!state.surpriseOpened) return false;
+    var total = state.surpriseBeats.length;
+    if (!total) return false;
 
-    /* Hide prior beats; show this one full-screen in the popup */
-    var all = $$('[data-reveal-beat]', root);
-    for (var i = 0; i < all.length; i++) {
-      all[i].classList.remove('is-in', 'is-armed', 'is-surprise-current', 'is-pop-in', 'is-saving-fade');
-      if (parseInt(all[i].getAttribute('data-reveal-beat'), 10) !== num) {
-        all[i].setAttribute('hidden', '');
-      } else {
-        all[i].removeAttribute('hidden');
+    /* ACNH: A during talk skips to full line before advancing */
+    var cur = state.surpriseBeats[state.surpriseBeatIndex];
+    if (cur) {
+      var typingLine = $('.reveal__line', cur) || $('[data-typing]', cur);
+      if (isTyping(typingLine)) {
+        skipTyping(typingLine);
+        sound('confirm');
+        return true;
       }
     }
 
-    state.surpriseStep = num;
-    beat.classList.add('is-armed', 'is-in', 'is-surprise-current');
-    triggerBeat(String(num), beat);
-
-    if (num === 1) {
-      var hold = state.reducedMotion ? SAVING_HOLD_REDUCED_MS : SAVING_HOLD_MS;
-      /* Hold window includes the upcoming fade so skip still feels responsive */
-      state.savingHoldUntil = Date.now() + hold + (state.reducedMotion ? SAVING_FADE_REDUCED_MS : SAVING_FADE_MS);
-      scheduleSurprise(function () {
-        if (state.surpriseOpen && state.surpriseStep === 1) {
-          finishSavingIntoAnnouncement();
-        }
-      }, hold);
+    if (state.surpriseBeatIndex < total - 1) {
+      showSurpriseBeat(state.surpriseBeatIndex + 1);
+      return true;
     }
+
+    /* Last beat: replay the Saving → surprise sequence */
+    sound('select');
+    resetRevealChain();
+    return true;
   }
 
-  function runSurpriseSequence() {
-    showSurpriseBeat(1);
-  }
-
-  /**
-   * Scroll-based reveal chain (fallback if someone deep-links #reveal).
-   * In normal use the surprise opens as a popup instead.
-   */
-  function setupRevealChain() {
+  function openSurprisePopup() {
+    if (state.surpriseOpened) return;
+    var popup = dom.surprisePopup || document.getElementById('surprise-popup');
     var revealRoot = document.getElementById('reveal');
-    if (!revealRoot) return;
+    if (!popup || !revealRoot) return;
 
-    /* Keep reveal out of the page flow until the popup opens. */
-    if (!revealRoot.hasAttribute('tabindex')) {
-      revealRoot.setAttribute('tabindex', '-1');
-    }
-    revealRoot.classList.add('reveal--popup');
+    var body = popup.querySelector('[data-surprise-body]');
+    var conf = popup.querySelector('[data-surprise-confetti]');
+    if (!body) return;
+    body.textContent = '';
+    state.surpriseBeats = [];
 
-    var beatPlayed = {};
-    var beatArmed = {};
-
-    if (state.revealObservers) {
-      for (var o = 0; o < state.revealObservers.length; o++) {
-        try { state.revealObservers[o].disconnect(); } catch (e0) {}
+    /* Clone beats 2–5; show only one at a time */
+    for (var i = 2; i <= 5; i++) {
+      var beat = $('[data-reveal-beat="' + i + '"]', revealRoot);
+      if (!beat) continue;
+      var clone = beat.cloneNode(true);
+      clone.classList.add('is-in');
+      clone.classList.remove('is-show');
+      clone.removeAttribute('style');
+      /* Popup owns chrome — drop nested replay/confetti from clones */
+      var nestedReplay = clone.querySelectorAll('.reveal__replay, [data-replay], .rv-replay');
+      for (var r = 0; r < nestedReplay.length; r++) {
+        if (nestedReplay[r].parentNode) nestedReplay[r].parentNode.removeChild(nestedReplay[r]);
       }
+      var nestedConf = clone.querySelectorAll('.reveal__confetti, [data-confetti]');
+      for (var n = 0; n < nestedConf.length; n++) {
+        if (nestedConf[n].parentNode) nestedConf[n].parentNode.removeChild(nestedConf[n]);
+      }
+      body.appendChild(clone);
+      state.surpriseBeats.push(clone);
     }
-    state.revealObservers = [];
 
-    /* Scroll observers only matter if popup styling fails — keep light arming. */
-    if (!('IntersectionObserver' in window)) return;
+    popup.hidden = false;
+    popup.setAttribute('aria-hidden', 'false');
+    void popup.offsetWidth;
+    popup.classList.add('is-in');
+    state.surpriseOpened = true;
 
-    var armIO = new IntersectionObserver(function (entries) {
-      for (var e = 0; e < entries.length; e++) {
-        var en = entries[e];
-        if (en.isIntersecting && !beatArmed[en.target.dataset.revealBeat]) {
-          beatArmed[en.target.dataset.revealBeat] = true;
-          if (!state.reducedMotion) en.target.classList.add('is-armed');
+    sound('fanfare');
+    if (conf) spawnConfetti(conf);
+
+    showSurpriseBeat(0);
+
+    var nextBtn = popup.querySelector('[data-surprise-next]');
+    if (nextBtn) {
+      try { nextBtn.focus({ preventScroll: true }); } catch (e) { nextBtn.focus(); }
+    }
+  }
+
+  function startSavingSequence() {
+    clearSavingSequence();
+    closeSurprisePopup();
+    state.surpriseOpened = false;
+
+    var saving = $('[data-reveal-beat="1"]');
+    if (!saving) {
+      openSurprisePopup();
+      return;
+    }
+
+    saving.classList.add('is-hold', 'is-in');
+    saving.classList.remove('is-fade');
+    sound('confirm');
+
+    var hold = state.reducedMotion ? 400 : SAVING_HOLD_MS;
+    var fade = state.reducedMotion ? 200 : SAVING_FADE_MS;
+
+    state.savingTimer = setTimeout(function () {
+      saving.classList.add('is-fade');
+      state.savingTimer = setTimeout(function () {
+        state.savingTimer = null;
+        openSurprisePopup();
+      }, fade);
+    }, hold);
+  }
+
+  function setupRevealChain() {
+    var popup = document.getElementById('surprise-popup');
+    if (popup && !popup._acBound) {
+      popup._acBound = true;
+      popup.addEventListener('click', function (e) {
+        if (e.target.closest('[data-surprise-next]')) {
+          e.preventDefault();
+          pressButtonFeedback(e.target.closest('[data-surprise-next]'));
+          advanceSurpriseBeat();
+          return;
         }
-      }
-    }, { threshold: 0 });
-
-    var triggerIO = new IntersectionObserver(function (entries) {
-      for (var e = 0; e < entries.length; e++) {
-        var en = entries[e];
-        if (!en.isIntersecting) continue;
-        /* Never auto-play surprise from scroll — popup owns the sequence. */
-        if (!state.surpriseOpen) continue;
-        var beatNum = en.target.dataset.revealBeat;
-        if (beatPlayed[beatNum]) continue;
-        /* Saving hold: delay beat 2 until hold expires */
-        if (beatNum === '2' && Date.now() < state.savingHoldUntil) continue;
-        beatPlayed[beatNum] = true;
-        triggerBeat(beatNum, en.target);
-      }
-    }, { threshold: 0.4 });
-    state.revealObservers.push(armIO, triggerIO);
-
-    for (var i = 1; i <= 5; i++) {
-      var el = $('[data-reveal-beat="' + i + '"]', revealRoot);
-      if (el) {
-        armIO.observe(el);
-        triggerIO.observe(el);
-      }
+        if (e.target.closest('[data-surprise-close]')) {
+          /* Scrim close must not leave empty reveal — replay Saving */
+          resetRevealChain();
+        }
+      });
     }
   }
 
   function triggerBeat(num, el) {
     el.classList.add('is-in');
     switch (num) {
-      case '1':
-        sound('confirm');
-        break;
       case '2':
-        /* Announcement is entered via showAnnouncementWithBlast for the
-           timed sequence; keep this for manual/replay edge cases. */
         triggerAnnouncementTypewriter(el);
         break;
       case '3':
@@ -1057,7 +1078,7 @@
     if (boxEl) boxEl.classList.remove('is-done');
     if (emoteEl) emoteEl.classList.remove('is-on');
 
-    typewriter(lineEl, segments, 60, function () {
+    typewriter(lineEl, segments, 55, function () {
       if (boxEl) boxEl.classList.add('is-done');
       if (emoteEl) {
         emoteEl.classList.add('is-on');
@@ -1071,14 +1092,76 @@
     });
   }
 
+  /** Convert a rich-text DOM node into typewriter segments ({text, cls?}). */
+  function domToTypeSegments(root) {
+    var segments = [];
+    if (!root) return segments;
+    function walk(node) {
+      if (!node) return;
+      if (node.nodeType === 3) {
+        var t = node.textContent || '';
+        if (t) segments.push({ text: t });
+        return;
+      }
+      if (node.nodeType !== 1) return;
+      var cls = '';
+      if (node.classList) {
+        if (node.classList.contains('ac-hl')) cls = 'ac-hl';
+        else if (node.classList.contains('ac-hl-g')) cls = 'ac-hl-g';
+        else if (node.classList.contains('live-time')) cls = 'live-time';
+        else if (node.classList.contains('live-weekday')) cls = 'live-weekday';
+        else if (node.classList.contains('live-date')) cls = 'live-date';
+      }
+      if (cls) {
+        segments.push({ text: node.textContent || '', cls: cls });
+        return;
+      }
+      for (var i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i]);
+    }
+    walk(root);
+    return segments;
+  }
+
+  function isTyping(el) {
+    return !!(el && el._acTypewriter && el.classList && el.classList.contains('ac-caret'));
+  }
+
+  function skipTyping(el) {
+    if (el && el._acTypewriter && typeof el._acTypewriter.skip === 'function') {
+      el._acTypewriter.skip();
+      return true;
+    }
+    return false;
+  }
+
+  function pressButtonFeedback(btn) {
+    if (!btn) return;
+    btn.classList.remove('is-press');
+    void btn.offsetWidth;
+    btn.classList.add('is-press');
+    setTimeout(function () { btn.classList.remove('is-press'); }, 160);
+  }
+
   function spawnConfetti(beatEl) {
     if (state.reducedMotion) return;
+    if (!beatEl) return;
 
-    var container = $('.reveal__blast', beatEl) ||
-                    $('.reveal__confetti', beatEl) ||
-                    $('.reveal-confetti', beatEl) ||
-                    $('[data-confetti]', beatEl);
+    var container = null;
+    if (beatEl.getAttribute && (
+      beatEl.hasAttribute('data-surprise-confetti') ||
+      beatEl.hasAttribute('data-confetti') ||
+      (beatEl.classList && (beatEl.classList.contains('reveal__confetti') || beatEl.classList.contains('reveal-confetti')))
+    )) {
+      container = beatEl;
+    } else {
+      container = $('.reveal__confetti', beatEl) ||
+                  $('.reveal-confetti', beatEl) ||
+                  $('[data-confetti]', beatEl) ||
+                  $('[data-surprise-confetti]', beatEl);
+    }
     if (!container) return;
+
+    container.textContent = '';
 
     /* Seedable PRNG for repeatable confetti layout */
     var seed = 7;
@@ -1087,44 +1170,21 @@
     for (var i = 0; i < 72; i++) {
       var piece = document.createElement('span');
       piece.className = 'confetti-piece';
-      var d = 4.2 + rnd() * 4.8;
+      var d = 4.5 + rnd() * 5.5;
       piece.style.setProperty('--x', (rnd() * 100).toFixed(2) + '%');
       piece.style.setProperty('--duration', d.toFixed(2) + 's');
-      piece.style.setProperty('--delay', (-rnd() * 0.4).toFixed(2) + 's');
+      piece.style.setProperty('--delay', (-rnd() * d).toFixed(2) + 's');
       piece.style.setProperty('--sway', Math.round((rnd() - 0.5) * 140) + 'px');
       piece.setAttribute('aria-hidden', 'true');
       container.appendChild(piece);
     }
   }
 
-  /** Reset all reveal beats for replay.
-   *  @param {boolean} soft  if true, don't reconnect observers (popup restart) */
-  function resetRevealChain(soft) {
-    var revealRoot = document.getElementById('reveal');
-    if (!revealRoot) return;
-
-    clearSurpriseTimers();
-    state.savingHoldUntil = 0;
-
-    var allBeats = $$('[data-reveal-beat]', revealRoot);
-    for (var i = 0; i < allBeats.length; i++) {
-      allBeats[i].classList.remove('is-armed', 'is-in', 'is-surprise-current', 'is-pop-in', 'is-saving-fade');
-      allBeats[i].removeAttribute('hidden');
-    }
-
-    var achv = $('[data-reveal-beat="3"]', revealRoot);
-    if (achv) achv.classList.remove('is-shake');
-
-    var confettiContainers = $$('.reveal__blast, .reveal__confetti, .reveal-confetti, [data-confetti]', revealRoot);
-    for (var c = 0; c < confettiContainers.length; c++) {
-      confettiContainers[c].textContent = '';
-    }
-
-    if (window.ACSections && ACSections.reveal && typeof ACSections.reveal.reset === 'function') {
-      try { ACSections.reveal.reset(); } catch (e) {}
-    }
-
-    if (!soft) setupRevealChain();
+  /** Reset reveal for replay */
+  function resetRevealChain() {
+    clearSavingSequence();
+    closeSurprisePopup();
+    startSavingSequence();
   }
 
   /* ================================================================
@@ -1134,24 +1194,10 @@
   function setupReplay() {
     document.addEventListener('click', function (e) {
       var btn = e.target.closest('.reveal__replay, .rv-replay, [data-replay]');
-      if (btn) {
-        e.preventDefault();
-        sound('select');
-        if (!state.surpriseOpen) openSurprise();
-        else {
-          resetRevealChain(true);
-          runSurpriseSequence();
-        }
-        return;
-      }
-
-      /* Click anywhere on the surprise (except replay) advances beats */
-      if (state.surpriseOpen) {
-        var root = document.getElementById('reveal');
-        if (root && root.contains(e.target) && !e.target.closest('a, button')) {
-          advanceSurprise();
-        }
-      }
+      if (!btn) return;
+      e.preventDefault();
+      sound('select');
+      resetRevealChain();
     });
   }
 
@@ -1161,17 +1207,58 @@
 
   var openingDialogue = {
     index: -1,   /* -1 = announcement only; 0+ = revealed dialogue lines */
-    done: false
+    done: false,
+    typing: false
   };
 
+  function resetOpeningDialogueState(rerender) {
+    openingDialogue.index = -1;
+    openingDialogue.done = false;
+    openingDialogue.typing = false;
+    if (!rerender) return;
+    var root = document.getElementById('opening');
+    if (!root || !window.ACSections || !ACSections.opening || !window.ACContent) return;
+    try {
+      ACSections.opening.render(root, state.data, ACContent);
+    } catch (e) { return; }
+    var prompt = $('[data-opening-next], .opening__prompt', root);
+    if (prompt && !prompt._acBound) {
+      prompt._acBound = true;
+      prompt.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        pressButtonFeedback(prompt);
+        advanceOpeningDialogue();
+      });
+    }
+    startOpeningLineTypewriter();
+  }
+
+  /** Type the current [data-opening-line] contents with talk blips. */
+  function startOpeningLineTypewriter() {
+    var root = document.getElementById('opening');
+    if (!root) return;
+    var lineEl = $('[data-opening-line]', root);
+    if (!lineEl || lineEl.classList.contains('is-empty')) return;
+
+    var segments = domToTypeSegments(lineEl);
+    if (!segments.length) return;
+
+    openingDialogue.typing = true;
+    typewriter(lineEl, segments, 55, function () {
+      openingDialogue.typing = false;
+      sound('confirm');
+    });
+  }
+
   /**
-   * Reveal the next opening dialogue line. Returns true if something
-   * was advanced (so the A-key handler can preventDefault).
+   * Reveal the next opening dialogue line inside the single dialogue
+   * text slot (ACNH style — never stack lines). Returns true if handled.
    */
   function advanceOpeningDialogue() {
     var root = document.getElementById('opening');
     if (!root) return false;
 
+    var lineEl = $('[data-opening-line]', root);
     var lines = $$('[data-opening-dialogue] .opening__dline', root);
     var prompt = $('[data-opening-next], .opening__prompt', root);
     var keepGoing = '';
@@ -1179,9 +1266,17 @@
       keepGoing = (window.ACContent && ACContent.get('ui.keepGoing')) || '';
     } catch (e) {}
 
+    /* Mid-type: A skips to full line (no advance yet) */
+    if (isTyping(lineEl) || openingDialogue.typing) {
+      skipTyping(lineEl);
+      openingDialogue.typing = false;
+      sound('confirm');
+      return true;
+    }
+
     if (openingDialogue.done) {
-      /* After last line, Next moves to the following scene. */
-      if (state.currentScene < CONTENT_SCENES - 1) {
+      if (state.currentScene < TOTAL_SECTIONS - 1) {
+        sound('select');
         scrollToScene(state.currentScene + 1);
         return true;
       }
@@ -1189,9 +1284,21 @@
     }
 
     openingDialogue.index += 1;
-    if (openingDialogue.index < lines.length) {
-      lines[openingDialogue.index].hidden = false;
-      sound('select');
+    if (openingDialogue.index < lines.length && lineEl) {
+      lineEl.classList.remove('is-empty');
+      var src = lines[openingDialogue.index];
+      var segments = domToTypeSegments(src);
+      if (!segments.length) {
+        lineEl.textContent = src.textContent || '';
+        sound('select');
+      } else {
+        sound('select');
+        openingDialogue.typing = true;
+        typewriter(lineEl, segments, 55, function () {
+          openingDialogue.typing = false;
+          sound('confirm');
+        });
+      }
       if (openingDialogue.index === lines.length - 1) {
         openingDialogue.done = true;
         if (prompt) {
@@ -1203,21 +1310,29 @@
     }
 
     openingDialogue.done = true;
+    if (state.currentScene < TOTAL_SECTIONS - 1) {
+      sound('select');
+      scrollToScene(state.currentScene + 1);
+      return true;
+    }
     return false;
   }
 
   function setupOpeningDialogue() {
     openingDialogue.index = -1;
     openingDialogue.done = false;
+    openingDialogue.typing = false;
 
     var root = document.getElementById('opening');
     if (!root) return;
 
     var prompt = $('[data-opening-next], .opening__prompt', root);
-    if (!prompt) return;
+    if (!prompt || prompt._acBound) return;
+    prompt._acBound = true;
 
     prompt.addEventListener('click', function (e) {
       e.preventDefault();
+      pressButtonFeedback(prompt);
       advanceOpeningDialogue();
     });
   }
@@ -1261,6 +1376,8 @@
     dom.soundToggleKey = $('.sound-toggle .ac-key');
     dom.skipLink       = $('.skip-link');
     dom.main           = document.getElementById('main');
+    dom.sceneWipe      = document.getElementById('scene-wipe');
+    dom.surprisePopup  = document.getElementById('surprise-popup');
   }
 
   /**
@@ -1519,7 +1636,18 @@
     setupSkipLink();
 
     /* Keyboard navigation */
-    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown, true);
+    /* Stop Space keyup from re-clicking a focused A button after we already advanced. */
+    document.addEventListener('keyup', function (e) {
+      if (!state.startGateDismissed && !state.surpriseOpened) return;
+      var code = e.code || '';
+      var key = e.key;
+      if (code === 'Space' || key === ' ' || key === 'Spacebar' ||
+          code === 'Enter' || key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
 
     /* Scene tracking via IntersectionObserver */
     setupSceneTracking();
@@ -1565,7 +1693,7 @@
       document.body.classList.add('is-started');
       if (dom.siteControls) dom.siteControls.hidden = false;
       startClock();
-      enterScene(0);
+      goToScene(0, { instant: true, silent: true, force: true });
     }
   }
 
@@ -1575,18 +1703,11 @@
 
   window.ACApp = {
     /** Force the current scene to a given index (0-based). */
-    goToScene: scrollToScene,
-
-    /** Open the surprise popup sequence. */
-    openSurprise: openSurprise,
+    goToScene: goToScene,
 
     /** Reset and replay the reveal chain. */
     replayReveal: function () {
-      if (!state.surpriseOpen) openSurprise();
-      else {
-        resetRevealChain(true);
-        runSurpriseSequence();
-      }
+      resetRevealChain();
     },
 
     /** Schedule counter animation on a newly-rendered element. */

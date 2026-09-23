@@ -62,9 +62,11 @@ img, svg { max-width: 100%; display: block; }
 }
 
 /* name chip that overlaps the top-left of the box */
+/* name chip that overlaps the top-left of the box */
 .ac-namechip {
   position: absolute;
   top: -16px; left: clamp(18px, 3vw, 38px);
+  z-index: 3;
   background: var(--ac-chip);
   color: var(--ac-white);
   font-family: var(--ac-font-ui);
@@ -75,6 +77,9 @@ img, svg { max-width: 100%; display: block; }
   box-shadow: 0 3px 0 rgba(122,91,67,.18);
   text-shadow: 0 2px 3px rgba(122,91,67,.35);
   white-space: nowrap;
+  max-width: calc(100% - 24px);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* bouncing "continue" triangle */
@@ -129,10 +134,22 @@ img, svg { max-width: 100%; display: block; }
   box-shadow: 0 3px 0 rgba(122,91,67,.30), inset 0 2px 0 rgba(255,255,255,.45);
   padding-bottom: .12em;
 }
-.ac-key--a { background: var(--ac-btn-a); }
-.ac-key--b { background: var(--ac-btn-b); }
-.ac-key--x { background: var(--ac-btn-x); }
-.ac-key--y { background: var(--ac-btn-y); color: var(--ac-ink-strong); }
+/* Button press — ACNH A-button squash */
+.ac-btn .ac-key {
+  transition: transform .12s var(--ease-bounce), box-shadow .12s var(--ease-soft);
+}
+.ac-btn:active .ac-key,
+.ac-btn.is-press .ac-key {
+  transform: translateY(2px) scale(.94);
+  box-shadow: 0 1px 0 rgba(122,91,67,.28), inset 0 1px 0 rgba(255,255,255,.35);
+}
+.ac-btn:active,
+.ac-btn.is-press {
+  transform: translateY(1px);
+}
+.start-gate__button:active .ac-key {
+  transform: translateY(2px) scale(.94);
+}
 
 /* ============================================================
    3. CARDS  (Nook-ish cream panels)

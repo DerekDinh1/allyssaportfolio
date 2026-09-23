@@ -43,11 +43,33 @@
 <!-- ============ presentation controls ============ -->
 <div class="site-controls" hidden>
   <p class="section-progress" aria-label="Scene"><span>01</span> / 05</p>
-  <button class="sound-toggle" type="button" aria-pressed="false">
-    <span class="ac-key ac-key--y" aria-hidden="true">Y</span>
+  <button class="sound-toggle" type="button" aria-pressed="false" aria-label="Sound off">
+    <span class="ac-key ac-key--x" aria-hidden="true">X</span>
     <span class="sound-toggle__label" data-content="ui.soundOff">Sound off</span>
   </button>
   <a class="edit-link" data-edit-link hidden></a>
+</div>
+
+<!-- Soft ACNH leaf wipe between presentation scenes -->
+<div class="scene-wipe" id="scene-wipe" hidden aria-hidden="true">
+  <img class="scene-wipe__leaf" src="assets/leaf.svg" alt="" width="120" height="120">
+</div>
+
+<!-- Surprise popup: one beat at a time after Saving -->
+<div class="surprise-popup" id="surprise-popup" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="surprise-title">
+  <div class="surprise-popup__scrim" data-surprise-close></div>
+  <div class="surprise-popup__panel">
+    <h2 class="ac-sr" id="surprise-title">Island surprise</h2>
+    <div class="surprise-popup__confetti" data-surprise-confetti aria-hidden="true"></div>
+    <div class="surprise-popup__body" data-surprise-body></div>
+    <div class="surprise-popup__footer">
+      <p class="surprise-popup__progress" data-surprise-progress aria-live="polite">1 / 4</p>
+      <button type="button" class="ac-btn surprise-popup__next" data-surprise-next>
+        <span class="ac-key ac-key--a" aria-hidden="true">A</span>
+        <span data-surprise-next-label>Next</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 <main id="main">
@@ -76,13 +98,11 @@
   <section class="scene scene--reveal reveal--popup" id="reveal" aria-labelledby="reveal-title" tabindex="-1">
     <h2 class="ac-sr" id="reveal-title">Some news</h2>
   </section>
-
-  <p class="content-status" id="content-status" role="status" aria-live="polite"></p>
 </main>
 
 <script src="assets/content.js"></script>
 <script src="assets/sections.js"></script>
-<script src="assets/audio.js"></script>
-<script src="assets/app.js"></script>
+<script src="assets/audio.js?v=talk11"></script>
+<script src="assets/app.js?v=talk11"></script>
 </body>
 </html>
