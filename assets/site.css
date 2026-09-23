@@ -960,12 +960,14 @@ main > section,
 .opening__allyssa {
   position: absolute;
   left: 50%;
-  bottom: 14%;
-  width: 58%;
+  bottom: 12%;
+  width: 62%;
   margin: 0;
   transform: translateX(-50%);
   z-index: 2;
   filter: drop-shadow(0 12px 16px rgba(94, 64, 34, .3));
+  /* Desk lip covers lower legs so the joyful cutout reads as seated */
+  clip-path: inset(0 2% 22% 2%);
 }
 .opening__allyssa-img {
   display: block;
@@ -993,16 +995,6 @@ main > section,
   height: 7px;
   border-radius: 999px;
   background: rgba(138, 97, 54, .4);
-}
-.opening__arms {
-  position: absolute;
-  left: 50%;
-  bottom: 18%;
-  width: 78%;
-  transform: translateX(-50%);
-  z-index: 4;
-  pointer-events: none;
-  filter: drop-shadow(0 4px 6px rgba(94, 64, 34, .2));
 }
 
 .ac-portrait { margin: 0; }

@@ -68,7 +68,8 @@
       var wrap = el('div', 'ac-wrap opening__wrap');
       var inner = el('div', 'opening__inner');
 
-      /* Allyssa seated at the office desk (photo cutout + desk arms). */
+      /* Allyssa seated at the office desk — first approved composite
+         (photo cutout with joyful pose; desk covers legs). */
       var scene = el('div', 'opening__desk-scene');
       scene.setAttribute('aria-hidden', 'false');
 
@@ -82,9 +83,9 @@
 
       var fig = el('figure', 'opening__allyssa');
       var img = el('img', 'opening__allyssa-img');
-      img.src = 'assets/allyssa-seated-noarms.png';
+      img.src = 'assets/allyssa-seated.png';
       img.alt = C.get('site.portraitAlt') || 'Allyssa seated at her desk';
-      img.width = 136; img.height = 296;
+      img.width = 468; img.height = 679;
       img.loading = 'eager';
       img.decoding = 'async';
       fig.appendChild(img);
@@ -93,14 +94,6 @@
       var desk = el('div', 'opening__desk-lip');
       desk.setAttribute('aria-hidden', 'true');
       scene.appendChild(desk);
-
-      var arms = el('img', 'opening__arms');
-      arms.src = 'assets/allyssa-arms-desk.svg';
-      arms.alt = '';
-      arms.setAttribute('aria-hidden', 'true');
-      arms.width = 420; arms.height = 160;
-      arms.decoding = 'async';
-      scene.appendChild(arms);
 
       inner.appendChild(scene);
 

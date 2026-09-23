@@ -361,6 +361,10 @@
           advanceSurprise();
           return;
         }
+        /* Space acts like A on the opening: advance dialogue first */
+        if (key === ' ' && state.currentScene === 0 && advanceOpeningDialogue()) {
+          return;
+        }
         if (state.currentScene < CONTENT_SCENES - 1) {
           scrollToScene(state.currentScene + 1);
         } else if (state.currentScene === CONTENT_SCENES - 1) {
