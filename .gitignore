@@ -1,2 +1,6 @@
 .tmp/
 .DS_Store
+
+# Superseded design previews — the real site is index.html.
+# Kept on disk locally for reference, not shipped or deployed.
+mockups/previews/
