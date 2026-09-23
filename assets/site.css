@@ -1668,6 +1668,137 @@ body.is-started .section-progress {
   opacity: .85;
 }
 
+/* ---------- Mail interrupt (paper plane after Saving) ---------- */
+.mail-interrupt {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) + 2);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--ac-grass) 55%, transparent);
+}
+.mail-interrupt[hidden] { display: none !important; }
+.mail-interrupt.is-on {
+  pointer-events: auto;
+}
+.mail-interrupt__plane {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: clamp(72px, 14vw, 110px);
+  height: clamp(72px, 14vw, 110px);
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 10px 18px rgba(74, 107, 58, 0.35));
+  pointer-events: none; /* until landed */
+  -webkit-tap-highlight-color: transparent;
+}
+.mail-interrupt.is-on.is-landed .mail-interrupt__plane {
+  pointer-events: auto;
+  animation: mail-bob 1.6s ease-in-out infinite;
+}
+.mail-interrupt.is-on:not(.is-landed) .mail-interrupt__plane {
+  animation: mail-fly-loop 3.2s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+  will-change: transform, opacity;
+}
+.mail-interrupt__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.mail-interrupt__hint {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + clamp(56px, 11vw, 84px));
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.45em 1.1em;
+  border-radius: var(--r-pill);
+  background: var(--ac-cream);
+  color: var(--ac-ink);
+  font-family: var(--ac-font-ui);
+  font-weight: 800;
+  font-size: clamp(0.9rem, 2vw, 1.05rem);
+  box-shadow: var(--sh-2);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.mail-interrupt.is-landed .mail-interrupt__hint {
+  opacity: 1;
+  transition: opacity 0.45s ease;
+}
+.mail-interrupt__plane:focus-visible {
+  outline: 3px solid var(--ac-leaf);
+  outline-offset: 6px;
+  border-radius: 50%;
+}
+.mail-interrupt__plane:hover .mail-interrupt__svg,
+.mail-interrupt__plane:focus-visible .mail-interrupt__svg {
+  transform: scale(1.06) rotate(-6deg);
+  transition: transform 0.25s ease;
+}
+
+/* Enter → one smooth loop around center → ease into soft landing */
+@keyframes mail-fly-loop {
+  0% {
+    transform: translate(calc(-50% + 58vw), calc(-50% - 42vh)) rotate(-35deg) scale(0.65);
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  22% {
+    /* glide in toward stage */
+    transform: translate(calc(-50% + 26vw), calc(-50% - 6vh)) rotate(25deg) scale(0.88);
+  }
+  32% {
+    /* enter loop from the right */
+    transform: translate(calc(-50% + 20vw), calc(-50% + 2vh)) rotate(70deg) scale(0.96);
+  }
+  42% {
+    /* loop top */
+    transform: translate(calc(-50% + 2vw), calc(-50% - 18vh)) rotate(160deg) scale(1.02);
+  }
+  52% {
+    /* loop left */
+    transform: translate(calc(-50% - 20vw), calc(-50% + 1vh)) rotate(250deg) scale(1);
+  }
+  62% {
+    /* loop bottom */
+    transform: translate(calc(-50% + 1vw), calc(-50% + 16vh)) rotate(340deg) scale(1);
+  }
+  72% {
+    /* finish loop, heading home */
+    transform: translate(calc(-50% + 12vw), calc(-50% - 2vh)) rotate(400deg) scale(1);
+  }
+  84% {
+    /* soft settle approach */
+    transform: translate(calc(-50% + 3vw), calc(-50% - 1.5vh)) rotate(-8deg) scale(1.03);
+  }
+  94% {
+    transform: translate(calc(-50% + 0.5vw), calc(-50% - 0.4vh)) rotate(-18deg) scale(1.01);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(-22deg) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes mail-bob {
+  0%, 100% {
+    transform: translate(-50%, -50%) rotate(-22deg);
+  }
+  50% {
+    transform: translate(-50%, calc(-50% - 8px)) rotate(-16deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   body.is-started .scene,
   body.is-started .scene.is-active,
@@ -1678,5 +1809,11 @@ body.is-started .section-progress {
     animation: none !important;
   }
   .scene-wipe__leaf { animation: none !important; }
+  .mail-interrupt.is-on:not(.is-landed) .mail-interrupt__plane,
+  .mail-interrupt.is-on.is-landed .mail-interrupt__plane {
+    animation: none !important;
+    transform: translate(-50%, -50%) rotate(-28deg);
+    opacity: 1;
+  }
 }
 

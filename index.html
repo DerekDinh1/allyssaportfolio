@@ -72,6 +72,20 @@
   </div>
 </div>
 
+<!-- Mail interrupt: paper plane flies in after Saving; click opens announcement -->
+<div class="mail-interrupt" id="mail-interrupt" hidden aria-hidden="true">
+  <button type="button" class="mail-interrupt__plane" data-mail-open aria-label="Open island news">
+    <svg class="mail-interrupt__svg" viewBox="0 0 64 64" width="88" height="88" aria-hidden="true" focusable="false">
+      <path fill="#FBF6E0" stroke="#7A5B43" stroke-width="2.2" stroke-linejoin="round"
+        d="M6 30 L58 10 L34 54 L28 36 Z"/>
+      <path fill="none" stroke="#7A5B43" stroke-width="2" stroke-linecap="round"
+        d="M28 36 L58 10 M28 36 L22 42"/>
+      <path fill="#E8A0B5" opacity=".85" d="M28 36 L34 54 L22 42 Z"/>
+    </svg>
+  </button>
+  <p class="mail-interrupt__hint" data-mail-hint hidden>Tap the letter!</p>
+</div>
+
 <main id="main">
 
   <!-- ---------- 01 · opening ---------- -->
@@ -102,7 +116,7 @@
 
 <script src="assets/content.js"></script>
 <script src="assets/sections.js"></script>
-<script src="assets/audio.js?v=talk11"></script>
-<script src="assets/app.js?v=talk11"></script>
+<script src="assets/audio.js?v=mail2"></script>
+<script src="assets/app.js?v=mail2"></script>
 </body>
 </html>

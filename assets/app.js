@@ -48,6 +48,8 @@
     startGateDismissed: false,
     sceneTransitioning: false,
     savingTimer: null,
+    mailInterruptOpen: false,
+    mailLandTimer: null,
     surpriseOpened: false,
     surpriseBeatIndex: 0,
     surpriseBeats: []
@@ -365,6 +367,13 @@
   }
 
   function clickVisibleAdvanceButton() {
+    if (state.mailInterruptOpen) {
+      var mailBtn = document.querySelector('#mail-interrupt:not([hidden]) [data-mail-open]');
+      if (mailBtn) {
+        openMailSurprise();
+        return true;
+      }
+    }
     if (state.surpriseOpened) {
       var surpriseBtn = document.querySelector('#surprise-popup:not([hidden]) [data-surprise-next]');
       if (surpriseBtn) {
@@ -387,6 +396,10 @@
 
   function advancePrimary() {
     if (clickVisibleAdvanceButton()) return true;
+    if (state.mailInterruptOpen) {
+      openMailSurprise();
+      return true;
+    }
     if (state.surpriseOpened) {
       advanceSurpriseBeat();
       return true;
@@ -660,9 +673,11 @@
       document.body.classList.remove('is-on-opening');
     }
 
-    /* Leaving reveal: cancel pending Saving timers */
+    /* Leaving reveal: cancel pending Saving / mail interrupt */
     if (prev === TOTAL_SECTIONS - 1 && idx !== prev) {
       clearSavingSequence();
+      clearMailInterrupt();
+      closeSurprisePopup();
     }
 
     /* Call the section's enter() if it exists */
@@ -838,7 +853,7 @@
   }
 
   /* ================================================================
-     REVEAL: Saving hold → fade → surprise popup + confetti
+     REVEAL: Saving hold → fade → paper plane → surprise popup
      ================================================================ */
 
   function clearSavingSequence() {
@@ -850,6 +865,96 @@
     if (saving) {
       saving.classList.remove('is-hold', 'is-fade', 'is-in');
     }
+  }
+
+  function clearMailInterrupt() {
+    if (state.mailLandTimer) {
+      clearTimeout(state.mailLandTimer);
+      state.mailLandTimer = null;
+    }
+    state.mailInterruptOpen = false;
+    var mail = document.getElementById('mail-interrupt');
+    if (!mail) return;
+    mail.hidden = true;
+    mail.setAttribute('aria-hidden', 'true');
+    mail.classList.remove('is-on', 'is-landed');
+    var hint = mail.querySelector('[data-mail-hint]');
+    if (hint) hint.hidden = true;
+    var plane = mail.querySelector('[data-mail-open]');
+    if (plane) {
+      plane.replaceWith(plane.cloneNode(true)); /* drop animationend listeners */
+    }
+  }
+
+  function showMailInterrupt() {
+    clearMailInterrupt();
+    var mail = document.getElementById('mail-interrupt');
+    if (!mail) {
+      openSurprisePopup();
+      return;
+    }
+
+    state.mailInterruptOpen = true;
+    mail.hidden = false;
+    mail.setAttribute('aria-hidden', 'false');
+    /* Restart fly animation cleanly */
+    void mail.offsetWidth;
+    mail.classList.add('is-on');
+
+    var plane = mail.querySelector('[data-mail-open]');
+    var hint = mail.querySelector('[data-mail-hint]');
+    var C = window.ACContent;
+    if (hint) {
+      hint.textContent = (C && C.get('reveal.mail.hint')) || 'Tap the letter!';
+      hint.hidden = false;
+    }
+
+    function land() {
+      if (!state.mailInterruptOpen) return;
+      mail.classList.add('is-landed');
+      sound('confirm');
+      if (plane) {
+        try { plane.focus({ preventScroll: true }); } catch (_) {}
+      }
+    }
+
+    if (state.reducedMotion) {
+      land();
+    } else if (plane) {
+      var done = false;
+      function onEnd(e) {
+        if (done) return;
+        if (e && e.animationName && e.animationName.indexOf('mail-fly') === -1) return;
+        done = true;
+        plane.removeEventListener('animationend', onEnd);
+        land();
+      }
+      plane.addEventListener('animationend', onEnd);
+      state.mailLandTimer = setTimeout(function () {
+        state.mailLandTimer = null;
+        onEnd({ animationName: 'mail-fly-loop' });
+      }, 3400);
+    } else {
+      land();
+    }
+
+    if (plane && !plane._acMailBound) {
+      plane._acMailBound = true;
+      plane.addEventListener('click', function (e) {
+        e.preventDefault();
+        openMailSurprise();
+      });
+    }
+  }
+
+  function openMailSurprise() {
+    if (!state.mailInterruptOpen && !document.getElementById('mail-interrupt')) {
+      openSurprisePopup();
+      return;
+    }
+    clearMailInterrupt();
+    sound('select');
+    openSurprisePopup();
   }
 
   function closeSurprisePopup() {
@@ -990,12 +1095,13 @@
 
   function startSavingSequence() {
     clearSavingSequence();
+    clearMailInterrupt();
     closeSurprisePopup();
     state.surpriseOpened = false;
 
     var saving = $('[data-reveal-beat="1"]');
     if (!saving) {
-      openSurprisePopup();
+      showMailInterrupt();
       return;
     }
 
@@ -1010,7 +1116,8 @@
       saving.classList.add('is-fade');
       state.savingTimer = setTimeout(function () {
         state.savingTimer = null;
-        openSurprisePopup();
+        /* Paper plane interrupts the save — click opens announcement */
+        showMailInterrupt();
       }, fade);
     }, hold);
   }
@@ -1183,6 +1290,7 @@
   /** Reset reveal for replay */
   function resetRevealChain() {
     clearSavingSequence();
+    clearMailInterrupt();
     closeSurprisePopup();
     startSavingSequence();
   }

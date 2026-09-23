@@ -57,6 +57,38 @@
   const MAX_BLIP_NODES = 16;
   let blipCount = 0;
 
+  /* Shared loudness — SFX / talk / ambient stay in one family */
+  const MIX = {
+    ambient: 0.085,
+    talk: 0.155,
+    blip: 0.055,
+    select: 0.075,
+    confirmA: 0.12,
+    confirmB: 0.13,
+    cancelA: 0.11,
+    cancelB: 0.10,
+    stampLow: 0.16,
+    stampHi: 0.04,
+    stampNoise: 0.07,
+    fanfare: 0.13,
+    talkFallback: 0.11
+  };
+
+  function duckAmbientBrief() {
+    if (!ambientGain || muted || !ambientRunning) return;
+    try {
+      const c = activeCtx();
+      if (!c) return;
+      const t = c.currentTime;
+      const g = ambientGain.gain;
+      g.cancelScheduledValues(t);
+      const cur = Math.max(0.0001, g.value || MIX.ambient);
+      g.setValueAtTime(cur, t);
+      g.linearRampToValueAtTime(MIX.ambient * 0.35, t + 0.02);
+      g.linearRampToValueAtTime(MIX.ambient, t + 0.28);
+    } catch (_) {}
+  }
+
   /*
    * Female Animalese — concatenative pulse+noise chirps ([Research](2b39ae2e)).
    * NOT continuous Klatt formants (robot). Hard onset per letter, ≤55ms,
@@ -264,7 +296,7 @@
       tone({
         type: 'triangle',
         freq: 720 + Math.random() * 80,
-        gain: 0.09,
+        gain: MIX.blip,
         attack: 0.002,
         hold: 0.012,
         release: 0.02,
@@ -314,11 +346,12 @@
         const t0 = c.currentTime;
         const bodyDelay = unvoiced ? 0.008 : (voicedCons ? 0.004 : 0);
         blipCount++;
+        duckAmbientBrief();
 
         const master = c.createGain();
         master.gain.setValueAtTime(0.0001, t0);
-        master.gain.linearRampToValueAtTime(0.25, t0 + 0.0025);
-        master.gain.setValueAtTime(0.25, t0 + Math.max(0.003, dur - 0.012));
+        master.gain.linearRampToValueAtTime(MIX.talk, t0 + 0.0025);
+        master.gain.setValueAtTime(MIX.talk, t0 + Math.max(0.003, dur - 0.012));
         master.gain.linearRampToValueAtTime(0.0001, t0 + dur);
         master.connect(c.destination);
 
@@ -402,7 +435,7 @@
           tone({
             type: 'triangle',
             freq: 620 + Math.random() * 60,
-            gain: 0.18,
+            gain: MIX.talkFallback,
           });
         } catch (_) {}
       }
@@ -420,7 +453,7 @@
       tone({
         type: 'triangle',
         freq: 680,
-        gain: 0.135,
+        gain: MIX.select,
         attack: 0.002,
         hold: 0.014,
         release: 0.028,
@@ -435,8 +468,8 @@
       if (!activeCtx() || muted) return;
       const c = activeCtx();
       const now = c.currentTime;
-      pluckNote(523.25, now, 0.24);          // C5
-      pluckNote(659.25, now + 0.09, 0.27);   // E5
+      pluckNote(523.25, now, MIX.confirmA);
+      pluckNote(659.25, now + 0.09, MIX.confirmB);
     },
 
     /** cancel() — gentle two-note fall, a minor third down (E5 → C#5). */
@@ -444,17 +477,17 @@
       if (!activeCtx() || muted) return;
       const c = activeCtx();
       const now = c.currentTime;
-      pluckNote(659.25, now, 0.21);          // E5
-      pluckNote(554.37, now + 0.09, 0.195);  // C#5
+      pluckNote(659.25, now, MIX.cancelA);
+      pluckNote(554.37, now + 0.09, MIX.cancelB);
     },
 
     /** stamp() — low sine thump + a short filtered noise burst. */
     stamp: function () {
       if (!activeCtx() || muted) return;
-      tone({ type: 'sine', freq: 120, gain: 0.38, attack: 0.002, hold: 0.06, release: 0.09 });
+      tone({ type: 'sine', freq: 120, gain: MIX.stampLow, attack: 0.002, hold: 0.06, release: 0.09 });
       tone({
-        type: 'triangle', freq: 300, gain: 0.075, attack: 0.001, hold: 0.012, release: 0.04,
-        noiseGain: 0.18, noiseHold: 0.025, noiseRelease: 0.05
+        type: 'triangle', freq: 300, gain: MIX.stampHi, attack: 0.001, hold: 0.012, release: 0.04,
+        noiseGain: MIX.stampNoise, noiseHold: 0.025, noiseRelease: 0.05
       });
     },
 
@@ -466,7 +499,7 @@
       const c = activeCtx();
       const now = c.currentTime;
       for (let i = 0; i < notes.length; i++) {
-        pluckNote(notes[i], now + i * step, 0.27, (Math.random() - 0.5) * 6);
+        pluckNote(notes[i], now + i * step, MIX.fanfare, (Math.random() - 0.5) * 6);
       }
     },
 
@@ -488,7 +521,7 @@
       /* master bed gain — silent start, fade in over ~1.5s */
       ambientGain = c.createGain();
       ambientGain.gain.setValueAtTime(0, now);
-      ambientGain.gain.linearRampToValueAtTime(0.17, now + 1.5);
+      ambientGain.gain.linearRampToValueAtTime(MIX.ambient, now + 1.5);
       ambientGain.connect(c.destination);
 
       /* --- build the one-loop timeline ----------------------- */
@@ -545,7 +578,7 @@
       function scheduleChord(freqs, t0) {
         const cNow = activeCtx();
         if (!cNow || !ambientGain) return;
-        const peak = 0.05;
+        const peak = 0.032;
         const attack = 0.8;
         const release = 1.2;
         const sustainUntil = t0 + chordDur;
@@ -579,11 +612,7 @@
       function schedulePluck(freq, t0) {
         const cNow = activeCtx();
         if (!cNow || !ambientGain) return;
-        const peak = 0.15;
-
-        const osc = cNow.createOscillator();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(freq, t0);
+        const peak = 0.065;
         osc.detune.setValueAtTime((Math.random() - 0.5) * 8, t0);
 
         const g = cNow.createGain();
