@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allyssa's Island — The Reveal (Mockup 05)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700;800&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/tokens.css">
+<link rel="stylesheet" href="../../assets/base.css">
+<script src="../../assets/config.js"></script>
+<script src="../../assets/audio.js"></script>
+<script>document.documentElement.className += ' js';</script>
+<style>
+  /* ============================================================
+     Section 5: surprise — layout only. Uses base.css primitives.
+     ============================================================ */
+  body { background: var(--ac-cream-deep); }
+  main { display: block; }
+
+  .rv-stage {
+    position: relative;
+    height: 900px;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .rv-stage + .rv-stage { border-top: 6px dashed color-mix(in srgb, var(--ac-ink-soft) 45%, transparent); }
+
+  /* the reviewer caption on each beat */
+  .rv-beat {
+    position: absolute; left: 50%; top: 18px;
+    transform: translateX(-50%);
+    z-index: var(--z-overlay);
+    margin: 0;
+    font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing: .16em;
+    color: var(--ac-white);
+    background: color-mix(in srgb, var(--ac-ink-strong) 62%, transparent);
+    padding: 6px 12px 6px;
+    border-radius: var(--r-pill);
+    white-space: nowrap;
+  }
+
+  .rv-slide {
+    position: fixed; left: 24px; top: 18px;
+    z-index: var(--z-overlay);
+    margin: 0;
+    font-family: var(--ac-font-ui); font-weight: 800;
+    font-size: .95rem; letter-spacing: .14em;
+    color: var(--ac-ink-strong);
+    opacity: .5;
+    pointer-events: none;
+  }
+  .rv-slide small { font-weight: 600; opacity: .8; font-size: 1em; }
+
+  /* ---------- sound toggle ---------- */
+  .rv-sound {
+    position: fixed; right: 18px; top: 14px;
+    z-index: var(--z-modal);
+    border: 0; cursor: pointer;
+    background: color-mix(in srgb, var(--ac-cream) 92%, transparent);
+    border-radius: var(--r-pill);
+    padding: .34em .95em .34em .38em;
+    box-shadow: var(--sh-1);
+    transition: transform var(--t-fast) var(--ease-bounce);
+  }
+  .rv-sound:hover { transform: translateY(-2px) scale(1.04); }
+  .rv-sound[aria-pressed="false"] .ac-key { background: var(--ac-ink-soft); }
+
+  /* ============================================================
+     BEAT 1 — the fake-out save screen
+     ============================================================ */
+  .rv-save {
+    background:
+      radial-gradient(ellipse at 50% 42%, var(--ac-leaf-light) 0%, transparent 55%),
+      var(--ac-leaf);
+    display: grid; place-items: center;
+    color: var(--ac-white);
+  }
+  .rv-save__inner { text-align: center; }
+  .rv-save__leaf {
+    width: 112px; height: 112px;
+    margin: 0 auto 34px;
+    filter: drop-shadow(0 6px 0 color-mix(in srgb, var(--ac-leaf-deep) 55%, transparent));
+    animation: rv-spin 2.8s var(--ease-soft) infinite;
+  }
+  .rv-save__leaf img { width: 100%; height: 100%; }
+  @keyframes rv-spin {
+    0%   { transform: rotate(0deg) scale(1); }
+    50%  { transform: rotate(180deg) scale(1.06); }
+    100% { transform: rotate(360deg) scale(1); }
+  }
+  .rv-save h2 {
+    color: var(--ac-white);
+    font-size: clamp(2.4rem, 5vw, 3.6rem);
+    letter-spacing: .04em;
+    text-shadow: 0 4px 0 color-mix(in srgb, var(--ac-leaf-deep) 70%, transparent);
+  }
+  .rv-dots span { display: inline-block; animation: rv-dot 1.4s var(--ease-soft) infinite; }
+  .rv-dots span:nth-child(2) { animation-delay: .18s; }
+  .rv-dots span:nth-child(3) { animation-delay: .36s; }
+  @keyframes rv-dot { 0%, 60%, 100% { opacity: 1; transform: translateY(0); } 30% { opacity: .35; transform: translateY(-6px); } }
+  .rv-save p {
+    margin: 14px 0 0;
+    font-family: var(--ac-font-ui); font-weight: 600;
+    font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+    opacity: .85;
+  }
+  .rv-save__aside {
+    position: absolute; left: 0; right: 0; bottom: 34px;
+    text-align: center;
+    font-family: var(--ac-font-body); font-weight: 600;
+    font-size: var(--ac-fs-small);
+    color: var(--ac-white);
+    opacity: .5;
+    margin: 0;
+    padding: 0 20px;
+  }
+
+  /* ============================================================
+     BEAT 2 — the announcement
+     ============================================================ */
+  .rv-announce { background: var(--ac-sky); }
+  .rv-announce__bg {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    z-index: -1;
+  }
+  .rv-allyssa {
+    position: absolute;
+    left: 50%; bottom: 228px;
+    height: 560px; width: auto;
+    transform: translateX(-50%);
+    z-index: 2;
+    filter: drop-shadow(0 10px 0 color-mix(in srgb, var(--ac-grass-deep) 55%, transparent));
+  }
+  .rv-allyssa img { height: 100%; width: auto; animation: rv-sway 3.2s var(--ease-soft) infinite; transform-origin: 50% 100%; }
+  @keyframes rv-sway { 0%, 100% { transform: rotate(-1.2deg); } 50% { transform: rotate(1.2deg) translateY(-4px); } }
+
+  .rv-emote {
+    position: absolute;
+    left: calc(50% + 96px); bottom: 720px;
+    width: 64px; height: 64px;
+    display: grid; place-items: center;
+    background: var(--ac-white);
+    border-radius: 50%;
+    box-shadow: var(--sh-2);
+    font-family: var(--ac-font-ui); font-weight: 800;
+    font-size: 2.3rem; line-height: 1;
+    color: var(--ac-pink-deep);
+    z-index: 3;
+    padding-bottom: 4px;
+  }
+  .rv-emote::after {
+    content: ''; position: absolute; left: 8px; bottom: -6px;
+    width: 20px; height: 20px;
+    background: var(--ac-white);
+    clip-path: polygon(0 100%, 30% 0, 100% 30%);
+  }
+  .js .rv-emote:not(.is-on) { opacity: 0; visibility: hidden; }
+
+  /* archived crate styles retained for the preserved mockup layout */
+  .rv-crate {
+    position: absolute;
+    left: calc(50% - 360px); bottom: 250px;
+    width: 150px;
+    z-index: 1;
+    transform: rotate(-4deg);
+  }
+  .rv-crate svg { width: 100%; height: auto; overflow: visible; }
+  .crate-shadow { fill: var(--ac-grass-deep); opacity: .45; }
+  .crate-body   { fill: var(--ac-wood-light); }
+  .crate-side   { fill: var(--ac-wood); }
+  .crate-flap   { fill: var(--ac-floor-light); }
+  .crate-tape   { fill: var(--ac-sand); opacity: .9; }
+  .crate-label  { fill: var(--ac-paper); }
+  .crate-text   { fill: var(--ac-pink-deep); font-family: var(--ac-font-ui); font-weight: 800; font-size: 17px; letter-spacing: .04em; }
+  .crate-leaf   { fill: var(--ac-leaf); }
+
+  .rv-dialog {
+    position: absolute;
+    left: 50%; bottom: 64px;
+    width: min(900px, calc(100% - 40px));
+    transform: translateX(-50%);
+    z-index: 5;
+  }
+  .rv-box { min-height: 180px; padding-top: clamp(28px, 3.4vw, 40px); }
+  .rv-line {
+    display: block;
+    font-size: clamp(1.5rem, 3.3vw, 2.6rem);
+    font-weight: 800;
+    line-height: 1.2;
+    min-height: 1.2em;
+    color: var(--ac-ink-strong);
+  }
+  .rv-line .ac-hl { font-weight: 800; }
+  .rv-sub {
+    display: block;
+    margin-top: 12px;
+    font-family: var(--ac-font-body);
+    font-weight: 700;
+    font-size: clamp(1rem, 1.6vw, 1.28rem);
+    color: var(--ac-ink);
+    line-height: 1.45;
+    transition: opacity var(--t-slow) var(--ease-soft), transform var(--t-slow) var(--ease-bounce);
+  }
+  .js .rv-box:not(.is-done) .rv-sub { opacity: 0; transform: translateY(8px); }
+  .js .rv-box:not(.is-done) .ac-next { visibility: hidden; }
+  .rv-news {
+    position: absolute; right: clamp(18px, 3vw, 38px); top: -15px;
+    transform: rotate(2deg);
+    box-shadow: 0 3px 0 color-mix(in srgb, var(--ac-ink) 22%, transparent);
+  }
+
+  /* ============================================================
+     BEAT 3 — the achievement
+     ============================================================ */
+  .rv-achv {
+    background:
+      radial-gradient(circle at 50% 50%, var(--ac-cream) 0 18%, transparent 62%),
+      var(--ac-sky-light);
+    display: grid; place-items: center;
+  }
+  .rv-rays {
+    position: absolute; left: 50%; top: 50%;
+    width: 2400px; height: 2400px;
+    margin: -1200px 0 0 -1200px;
+    background: repeating-conic-gradient(
+      from 0deg,
+      color-mix(in srgb, var(--ac-ticket) 42%, transparent) 0deg 9deg,
+      transparent 9deg 18deg);
+    -webkit-mask-image: radial-gradient(circle, var(--ac-ink) 0 18%, transparent 46%);
+            mask-image: radial-gradient(circle, var(--ac-ink) 0 18%, transparent 46%);
+    animation: rv-rays 40s var(--ease-soft) infinite;
+    z-index: -1;
+  }
+  @keyframes rv-rays { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .rv-card {
+    position: relative;
+    width: min(860px, calc(100% - 32px));
+    padding: 54px 60px 46px;
+    border-radius: var(--r-xl);
+    text-align: center;
+    box-shadow: var(--sh-3), var(--sh-inset);
+  }
+  .rv-card__head {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    margin-bottom: 20px;
+  }
+  .rv-miles {
+    width: 52px; height: 52px; flex: none;
+    border-radius: 50%;
+    background: var(--ac-nook-blue);
+    display: grid; place-items: center;
+    box-shadow: 0 4px 0 color-mix(in srgb, var(--ac-ink) 25%, transparent), inset 0 3px 0 color-mix(in srgb, var(--ac-white) 40%, transparent);
+  }
+  .rv-miles .ac-leaf { width: 26px; height: 26px; background: var(--ac-white); box-shadow: none; }
+  .rv-achv h2 {
+    font-size: clamp(2.6rem, 7vw, 5.6rem);
+    letter-spacing: .02em;
+    line-height: 1;
+    color: var(--ac-ink-strong);
+    text-shadow: 0 5px 0 var(--ac-gold);
+    margin: 4px 0 18px;
+  }
+  .rv-card__lead {
+    font-family: var(--ac-font-ui); font-weight: 700;
+    font-size: clamp(1.1rem, 2vw, 1.55rem);
+    color: var(--ac-ink);
+    margin: 0 auto 28px;
+    max-width: 36ch;
+    line-height: 1.3;
+  }
+  .rv-card__row {
+    display: flex; gap: 18px; justify-content: center; align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .rv-card__row .ac-ticket { min-width: 220px; text-align: left; }
+  .rv-counter {
+    flex: 1 1 320px; max-width: 420px;
+    background: var(--ac-cream-deep);
+    border-radius: var(--r-md);
+    padding: 14px 20px 16px;
+    text-align: left;
+    box-shadow: inset 0 3px 0 color-mix(in srgb, var(--ac-ink) 8%, transparent);
+  }
+  .rv-counter__top {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+    font-family: var(--ac-font-ui); font-weight: 800;
+    color: var(--ac-ink-strong);
+    font-size: 1.15rem;
+  }
+  .rv-counter__top small { color: var(--ac-leaf-deep); font-size: .85rem; letter-spacing: .06em; }
+  .rv-bar {
+    margin-top: 10px; height: 16px;
+    border-radius: var(--r-pill);
+    background: var(--ac-cream-edge);
+    overflow: hidden;
+  }
+  .rv-bar span {
+    display: block; height: 100%; width: 100%;
+    border-radius: inherit;
+    background: repeating-linear-gradient(-45deg, var(--ac-leaf) 0 12px, var(--ac-leaf-light) 12px 24px);
+    transform-origin: 0 50%;
+  }
+  .rv-counter p { margin: 8px 0 0; font-size: .9rem; font-weight: 700; color: var(--ac-ink-soft); }
+  .rv-tags { margin-top: 22px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  .rv-stamp {
+    position: absolute;
+    right: -26px; top: -34px;
+    font-size: clamp(1.1rem, 2.2vw, 1.75rem);
+    border-width: 6px;
+    background: color-mix(in srgb, var(--ac-paper) 88%, transparent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--ac-pink-deep) 18%, transparent);
+    white-space: nowrap;
+    z-index: 2;
+  }
+
+  /* slam choreography. Final state is the default (so full-page screenshots show it);
+     JS arms (hides) a beat the instant its top edge enters, then .is-in slams it in. */
+  .rv-achv.is-armed:not(.is-in) .rv-card  { opacity: 0; transform: scale(1.35) translateY(-30px); }
+  .rv-achv.is-armed:not(.is-in) .rv-stamp { opacity: 0; transform: rotate(-40deg) scale(2.6); }
+  .rv-achv.is-armed:not(.is-in) .rv-bar span { transform: scaleX(0); }
+  .rv-achv.is-in .rv-card  { animation: rv-slam .55s var(--ease-bounce) both; }
+  .rv-achv.is-in .rv-stamp { animation: rv-stampin .5s .5s var(--ease-bounce) both; }
+  .rv-achv.is-in .rv-bar span { animation: rv-fill 1.1s .9s var(--ease-soft) both; }
+  .rv-achv.is-shake { animation: rv-shake .38s .62s var(--ease-soft) both; }
+  @keyframes rv-slam {
+    0%   { opacity: 0; transform: scale(1.35) translateY(-30px); }
+    60%  { opacity: 1; }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes rv-stampin {
+    0%   { opacity: 0; transform: rotate(-40deg) scale(2.6); }
+    100% { opacity: .92; transform: rotate(-11deg) scale(1); }
+  }
+  @keyframes rv-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes rv-shake {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(-5px, 3px); }
+    50% { transform: translate(4px, -3px); }
+    75% { transform: translate(-2px, 2px); }
+  }
+
+  /* ============================================================
+     BEAT 4 — the letter
+     ============================================================ */
+  .rv-letter-stage {
+    background:
+      repeating-linear-gradient(90deg,
+        transparent 0 180px,
+        color-mix(in srgb, var(--ac-wood-mid) 40%, transparent) 180px 184px),
+      repeating-linear-gradient(0deg,
+        color-mix(in srgb, var(--ac-wood-light) 60%, transparent) 0 3px,
+        transparent 3px 22px),
+      var(--ac-wood);
+    display: grid; place-items: center;
+  }
+  .rv-letter {
+    position: relative;
+    width: min(1140px, calc(100% - 40px));
+    background:
+      url("../../assets/leaf.svg") no-repeat 34% 56% / 380px 380px,
+      var(--ac-paper);
+    border-radius: 8px;
+    box-shadow: var(--sh-3);
+    transform: rotate(-.8deg);
+    padding: 58px 64px 52px;
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 36px;
+    align-items: center;
+  }
+  /* soften the watermark leaf without touching the text */
+  .rv-letter::before {
+    content: ''; position: absolute; inset: 0;
+    background: color-mix(in srgb, var(--ac-paper) 90%, transparent);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .rv-letter > * { position: relative; }
+  /* the red-and-blue airmail stripes, top + bottom */
+  .rv-letter::after {
+    content: ''; position: absolute; inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    --stripe: repeating-linear-gradient(-45deg,
+      var(--ac-pink-deep) 0 18px, var(--ac-paper) 18px 28px,
+      var(--ac-nook-blue) 28px 46px, var(--ac-paper) 46px 56px);
+    background:
+      var(--stripe) top    / 100% 16px no-repeat,
+      var(--stripe) bottom / 100% 16px no-repeat;
+  }
+
+  .rv-hand {
+    font-family: var(--ac-font-hand);
+    color: var(--ac-ink-strong);
+    font-size: clamp(1.6rem, 2.35vw, 2.15rem);
+    line-height: 1.28;
+  }
+  .rv-hand p { margin: 0 0 .45em; }
+  .rv-hand .rv-dear { font-size: 1.15em; font-weight: 600; margin-bottom: .35em; }
+  .rv-hand .ac-hl { font-weight: 600; color: var(--ac-pink-deep); }
+  .rv-sign {
+    font-size: 1.35em; font-weight: 600;
+    margin: .25em 0 .4em !important;
+    padding-left: 1.2em;
+  }
+  .rv-heart { display: inline-block; width: .8em; height: .8em; vertical-align: -.05em; margin-left: .2em; }
+  .rv-heart path { fill: var(--ac-pink); }
+  .rv-ps {
+    font-size: .82em;
+    color: var(--ac-ink);
+    border-top: 2px dashed var(--ac-cream-edge);
+    padding-top: .35em;
+    margin: 0 !important;
+  }
+
+  /* big date — the most important string on the site */
+  .rv-date {
+    position: relative;
+    justify-self: start;
+    margin-top: 104px; /* clear the postage stamp + postmark in the top-right corner */
+    width: min(360px, 100%);
+    text-align: center;
+    transform: rotate(3deg);
+  }
+  .rv-cal {
+    position: relative;
+    background: var(--ac-cream);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--sh-3), var(--sh-inset);
+  }
+  .rv-cal__month {
+    display: block;
+    background: var(--ac-pink-deep);
+    color: var(--ac-white);
+    font-family: var(--ac-font-ui); font-weight: 800;
+    font-size: clamp(2rem, 3.6vw, 3.1rem);
+    letter-spacing: .1em;
+    padding: 16px 10px 10px;
+    line-height: 1;
+    text-shadow: 0 3px 0 color-mix(in srgb, var(--ac-ink-strong) 30%, transparent);
+    position: relative;
+  }
+  /* calendar rings */
+  .rv-cal__month::before, .rv-cal__month::after {
+    content: ''; position: absolute; top: 8px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--ac-cream-deep);
+    box-shadow: inset 0 2px 0 color-mix(in srgb, var(--ac-ink) 25%, transparent);
+  }
+  .rv-cal__month::before { left: 22%; }
+  .rv-cal__month::after  { right: 22%; }
+  .rv-cal__day {
+    display: block;
+    font-family: var(--ac-font-ui); font-weight: 800;
+    font-size: clamp(5.2rem, 11vw, 9.4rem);
+    line-height: .95;
+    padding: 18px 0 6px;
+    color: var(--ac-ink-strong);
+    text-shadow: 0 6px 0 var(--ac-gold);
+    letter-spacing: -.01em;
+  }
+  .rv-cal__day sup { font-size: .38em; vertical-align: .95em; margin-left: .04em; color: var(--ac-pink-deep); text-shadow: 0 3px 0 var(--ac-pink); }
+  .rv-firstday {
+    display: inline-block;
+    margin: 4px 0 22px;
+    font-size: clamp(1rem, 1.6vw, 1.3rem);
+    letter-spacing: .18em;
+    padding: .3em 1.1em .36em;
+    box-shadow: 0 3px 0 color-mix(in srgb, var(--ac-ink) 25%, transparent);
+  }
+  .rv-circle {
+    position: absolute; inset: -34px -30px -28px -34px;
+    width: calc(100% + 64px); height: calc(100% + 62px);
+    max-width: none;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 2;
+  }
+  .rv-circle path { fill: none; stroke: var(--ac-pink); stroke-width: 5; stroke-linecap: round; opacity: .85; }
+  .rv-sparkle {
+    position: absolute;
+    width: 30px; height: 30px;
+    background: var(--ac-gold);
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+    animation: rv-twinkle 1.8s var(--ease-soft) infinite;
+    z-index: 3;
+  }
+  .rv-sparkle:nth-of-type(2) { animation-delay: .5s; background: var(--ac-pink); width: 22px; height: 22px; }
+  .rv-sparkle:nth-of-type(3) { animation-delay: 1s;  background: var(--ac-sky-deep); width: 18px; height: 18px; }
+  @keyframes rv-twinkle { 0%, 100% { transform: scale(.7) rotate(0deg); opacity: .6; } 50% { transform: scale(1.15) rotate(20deg); opacity: 1; } }
+  .rv-date__tape {
+    position: absolute; left: 50%; top: -16px;
+    width: 120px; height: 34px;
+    transform: translateX(-50%) rotate(-4deg);
+    background: color-mix(in srgb, var(--ac-sky-light) 80%, transparent);
+    z-index: 4;
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--ac-ink) 12%, transparent);
+  }
+
+  /* postage stamp + postmark */
+  .rv-post {
+    position: absolute !important;
+    right: 26px; top: 30px;
+    width: 86px; height: 100px;
+    z-index: 3;
+  }
+  .rv-post__stamp {
+    position: absolute; inset: 0;
+    background: var(--ac-sky);
+    border: 6px solid var(--ac-paper);
+    outline: 2px dashed var(--ac-cream-edge);
+    display: grid; place-items: center;
+    transform: rotate(4deg);
+    box-shadow: var(--sh-1);
+  }
+  .rv-post__stamp .ac-leaf { width: 38px; height: 38px; }
+  .rv-post__mark {
+    position: absolute; left: -58px; top: 30px;
+    width: 96px; height: 96px;
+    overflow: visible;
+  }
+  .rv-post__mark circle { fill: none; stroke: var(--ac-ink-soft); stroke-width: 2.5; opacity: .7; }
+  .rv-post__mark text { fill: var(--ac-ink-soft); font-family: var(--ac-font-ui); font-weight: 800; font-size: 11px; letter-spacing: .12em; opacity: .85; }
+  .rv-post__mark path.wave { fill: none; stroke: var(--ac-ink-soft); stroke-width: 2.5; opacity: .6; }
+
+  .rv-letter-stage.is-armed:not(.is-in) .rv-date { opacity: 0; transform: rotate(-12deg) scale(.6); }
+  .rv-letter-stage.is-in .rv-date { animation: rv-datein .7s .35s var(--ease-bounce) both; }
+  @keyframes rv-datein {
+    0%   { opacity: 0; transform: rotate(-12deg) scale(.6); }
+    100% { opacity: 1; transform: rotate(3deg) scale(1); }
+  }
+
+  /* ============================================================
+     FINALE — celebration banner
+     ============================================================ */
+  .rv-finale {
+    background:
+      radial-gradient(ellipse at 50% 30%, var(--ac-cream) 0%, transparent 60%),
+      linear-gradient(180deg, var(--ac-sky-light) 0%, var(--ac-sky) 100%);
+    text-align: center;
+  }
+  .rv-bunting {
+    position: absolute; left: -20px; right: -20px; top: 56px;
+    display: flex; justify-content: space-between;
+    z-index: 4;
+    pointer-events: none;
+  }
+  .rv-bunting::before {
+    content: ''; position: absolute; left: 0; right: 0; top: -4px; height: 4px;
+    background: var(--ac-wood-mid);
+    border-radius: var(--r-pill);
+  }
+  .rv-flag {
+    width: 52px; height: 58px; flex: none;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    background: var(--ac-pink);
+    transform-origin: 50% 0;
+    animation: rv-flutter 2.4s var(--ease-soft) infinite;
+  }
+  .rv-flag:nth-child(5n+2) { background: var(--ac-ticket);    animation-delay: -.4s; }
+  .rv-flag:nth-child(5n+3) { background: var(--ac-leaf);      animation-delay: -.8s; }
+  .rv-flag:nth-child(5n+4) { background: var(--ac-nook-blue); animation-delay: -1.2s; }
+  .rv-flag:nth-child(5n)   { background: var(--ac-pink-deep); animation-delay: -1.6s; }
+  @keyframes rv-flutter { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+
+  .rv-finale__inner {
+    position: relative; z-index: 6;
+    padding-top: 150px;
+  }
+  .rv-finale .ac-tag { font-size: 1rem; padding: .3em 1.1em .36em; letter-spacing: .06em; }
+  .rv-congrats {
+    margin: 18px auto 10px;
+    font-size: clamp(2.3rem, 7.2vw, 6.4rem);
+    line-height: 1.02;
+    color: var(--ac-white);
+    text-shadow:
+      0 3px 0 var(--ac-pink-deep), 3px 0 0 var(--ac-pink-deep), -3px 0 0 var(--ac-pink-deep), 0 -3px 0 var(--ac-pink-deep),
+      2px 2px 0 var(--ac-pink-deep), -2px 2px 0 var(--ac-pink-deep), 2px -2px 0 var(--ac-pink-deep), -2px -2px 0 var(--ac-pink-deep),
+      0 10px 0 color-mix(in srgb, var(--ac-pink-deep) 45%, transparent);
+    padding: 0 16px;
+  }
+  .rv-congrats .w { display: inline-block; white-space: nowrap; }
+  .rv-congrats .ch { display: inline-block; animation: rv-wave 2.2s var(--ease-soft) infinite; }
+  @keyframes rv-wave { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-12px); } }
+  .rv-finale__sub {
+    font-family: var(--ac-font-ui); font-weight: 700;
+    font-size: clamp(1.05rem, 1.9vw, 1.5rem);
+    color: var(--ac-ink-strong);
+    margin: 18px auto 26px;
+    padding: 0 20px;
+    max-width: 44ch;
+  }
+  .rv-replay {
+    border: 0; cursor: pointer;
+    background: var(--ac-cream);
+    border-radius: var(--r-pill);
+    padding: .42em 1.3em .42em .5em;
+    font-size: clamp(1rem, 1.4vw, 1.2rem);
+    box-shadow: var(--sh-2), var(--sh-inset);
+    transition: transform var(--t-fast) var(--ease-bounce), box-shadow var(--t-fast) var(--ease-soft);
+  }
+  .rv-replay:hover { transform: translateY(-3px) scale(1.05); }
+  .rv-replay:active { transform: translateY(1px) scale(.98); }
+
+  .rv-hill {
+    position: absolute; left: -10%; right: -10%; bottom: -120px;
+    height: 330px;
+    border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    background: var(--ac-grass);
+    box-shadow: inset 0 14px 0 var(--ac-leaf-light);
+    z-index: 1;
+  }
+  .rv-finale__allyssa {
+    position: absolute; left: 50%; bottom: 40px;
+    height: 250px; width: auto;
+    transform: translateX(-50%);
+    z-index: 5;
+  }
+  .rv-finale__allyssa img { height: 100%; width: auto; animation: rv-hop 1.1s var(--ease-bounce) infinite; }
+  @keyframes rv-hop { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-16px); } }
+  .rv-finale__bubble {
+    position: absolute; left: calc(50% + 70px); bottom: 270px;
+    z-index: 5;
+    font-family: var(--ac-font-ui); font-weight: 800;
+    font-size: 1.6rem; line-height: 1;
+    color: var(--ac-pink-deep);
+    background: var(--ac-white);
+    border-radius: var(--r-pill);
+    padding: 8px 14px 10px;
+    box-shadow: var(--sh-2);
+  }
+
+  /* confetti (generated by JS, pure CSS divs) */
+  .rv-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 3; }
+  .rv-conf {
+    position: absolute; top: -40px;
+    width: 12px; height: 18px;
+    border-radius: 2px;
+    background: var(--ac-pink);
+    animation: rv-fall var(--d, 6s) var(--ease-soft) var(--delay, 0s) infinite;
+  }
+  .rv-conf.c1 { background: var(--ac-pink-deep); }
+  .rv-conf.c2 { background: var(--ac-ticket); }
+  .rv-conf.c3 { background: var(--ac-leaf); }
+  .rv-conf.c4 { background: var(--ac-nook-blue); }
+  .rv-conf.c5 { background: var(--ac-white); }
+  .rv-conf.round { border-radius: 50%; width: 12px; height: 12px; }
+  .rv-conf.strip { width: 6px; height: 24px; border-radius: 3px; }
+  @keyframes rv-fall {
+    0%   { transform: translate3d(0, 0, 0) rotate(var(--r, 0deg)); }
+    50%  { transform: translate3d(var(--sway, 30px), 480px, 0) rotate(calc(var(--r, 0deg) + 360deg)); }
+    100% { transform: translate3d(0, 980px, 0) rotate(calc(var(--r, 0deg) + 720deg)); }
+  }
+  .rv-finale .ac-petal { z-index: 4; }
+
+  /* ---------- placeholders, legend, badge ---------- */
+  .ph {
+    text-decoration: underline dotted;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    cursor: help;
+  }
+  .rv-legend {
+    position: fixed; left: 16px; bottom: 14px;
+    z-index: var(--z-overlay);
+    max-width: 280px;
+    background: color-mix(in srgb, var(--ac-paper) 92%, transparent);
+    color: var(--ac-ink);
+    border-radius: var(--r-md);
+    padding: 7px 12px 8px;
+    box-shadow: var(--sh-1);
+    font-family: var(--ac-font-body);
+    font-size: .74rem; line-height: 1.4;
+  }
+  .rv-legend summary {
+    display: flex; gap: 6px; align-items: center;
+    font-family: var(--ac-font-ui); font-weight: 800; font-size: .8rem;
+    color: var(--ac-ink-strong); cursor: pointer; list-style: none;
+  }
+  .rv-legend summary::-webkit-details-marker { display: none; }
+  .rv-legend summary:focus-visible { border-radius: var(--r-sm); outline-offset: 2px; }
+  .rv-legend .ac-leaf { width: .95em; height: .95em; }
+  .rv-legend ul { margin: 6px 0 0; padding-left: 1.1em; }
+  .rv-badge {
+    position: fixed; right: 10px; bottom: 8px;
+    z-index: var(--z-modal);
+    pointer-events: none;
+    font: 700 10px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing: .12em;
+    color: var(--ac-white);
+    background: color-mix(in srgb, var(--ac-ink-strong) 55%, transparent);
+    padding: 4px 7px;
+    border-radius: 5px;
+    opacity: .7;
+  }
+
+  :focus-visible {
+    outline: 4px solid var(--ac-nook-blue);
+    outline-offset: 4px;
+    border-radius: var(--r-md);
+  }
+  .rv-replay:focus-visible, .rv-sound:focus-visible { border-radius: var(--r-pill); }
+
+  /* ---------- narrow screens ---------- */
+  @media (max-width: 760px) {
+    .rv-stage { height: auto; min-height: 720px; }
+    .rv-beat { font-size: 9.5px; letter-spacing: .1em; top: 56px; }
+    .rv-slide { left: 14px; top: 16px; font-size: .8rem; }
+    .rv-sound { right: 10px; top: 10px; font-size: .78rem; }
+
+    .rv-announce { min-height: 760px; }
+    .rv-allyssa { height: 400px; bottom: 250px; }
+    .rv-emote { left: calc(50% + 60px); bottom: 610px; width: 50px; height: 50px; font-size: 1.8rem; }
+    .rv-crate { left: 12px; bottom: 262px; width: 96px; }
+    .rv-dialog { bottom: 40px; width: calc(100% - 24px); }
+    .rv-news { top: -28px; }
+
+    .rv-achv { padding: 140px 0 70px; }
+    .rv-card { padding: 50px 22px 30px; }
+    .rv-stamp { right: -6px; top: -26px; }
+    .rv-card__row .ac-ticket { min-width: 0; flex: 1 1 100%; }
+
+    .rv-letter-stage { padding: 120px 0 70px; }
+    .rv-letter { grid-template-columns: 1fr; padding: 48px 24px 40px; width: calc(100% - 20px); gap: 44px; background-size: 240px 240px; background-position: 50% 30%; }
+    .rv-post { width: 60px; height: 70px; right: 14px; top: 24px; }
+    .rv-post__mark { display: none; }
+    .rv-date { width: min(280px, 100%); margin: 0 0 14px; justify-self: center; }
+    .rv-circle { display: none; }
+
+    .rv-finale { min-height: 860px; }
+    .rv-finale__inner { padding-top: 130px; }
+    .rv-flag { width: 34px; height: 40px; }
+    .rv-finale__allyssa { height: 190px; }
+    .rv-finale__bubble { left: calc(50% + 40px); bottom: 210px; font-size: 1.2rem; }
+
+    .rv-legend { max-width: 62vw; font-size: .68rem; padding: 7px 10px; bottom: 30px; }
+    .rv-legend summary { font-size: .7rem; }
+  }
+
+  /* ---------- reduced motion: no transform animation, final states visible ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .rv-achv .rv-card, .rv-achv .rv-bar span { opacity: 1 !important; transform: none !important; }
+    .rv-achv .rv-stamp { opacity: .92 !important; transform: rotate(-11deg) !important; }
+    .rv-letter-stage .rv-date { opacity: 1 !important; transform: rotate(3deg) !important; }
+    .js .rv-box .rv-sub { opacity: 1 !important; transform: none !important; }
+    .rv-conf { top: var(--top, 20%); transform: rotate(var(--r, 0deg)); }
+    .rv-sound:hover, .rv-replay:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<p class="rv-slide" aria-hidden="true">05 <small>/ 05</small></p>
+
+<button class="ac-btn rv-sound" id="rv-sound" type="button" aria-pressed="false">
+  <span class="ac-key ac-key--x" aria-hidden="true">X</span> <span id="rv-sound-label">Sound: off</span>
+</button>
+
+<main id="reveal" aria-labelledby="rv-title">
+  <h1 id="rv-title" class="ac-sr">The reveal: Allyssa has news</h1>
+
+  <!-- ======================= BEAT 1 ======================= -->
+  <section class="rv-stage rv-save" aria-labelledby="rv-save-title">
+    <p class="rv-beat" aria-hidden="true">BEAT 1 — FAKE-OUT</p>
+    <div class="rv-save__inner">
+      <div class="rv-save__leaf">
+        <img src="../../assets/leaf.svg" alt="The island leaf, slowly spinning while the game saves">
+      </div>
+      <h2 id="rv-save-title">Saving<span class="rv-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span></h2>
+      <p>Do not turn off the power.</p>
+    </div>
+    <p class="rv-save__aside">(This is a completely normal save. Nothing is about to happen.)</p>
+  </section>
+
+  <!-- ======================= BEAT 2 ======================= -->
+  <section class="rv-stage rv-announce" id="rv-announce" aria-labelledby="rv-announce-title">
+    <p class="rv-beat" aria-hidden="true">BEAT 2 — THE ANNOUNCEMENT</p>
+    <h2 id="rv-announce-title" class="ac-sr">An announcement from Allyssa</h2>
+    <img class="rv-announce__bg" src="../../assets/outdoor-bg.svg" alt="" aria-hidden="true">
+
+    <div class="rv-allyssa">
+      <img src="../../assets/allyssa-stand.svg" alt="Allyssa standing on the island, smiling with her eyes happily closed.">
+    </div>
+    <div class="rv-emote ac-pop" id="rv-emote" aria-hidden="true">!</div>
+
+    <div class="ac-petals" aria-hidden="true">
+      <span class="ac-petal" style="left:30%; top:16%; animation-delay:-1s"></span>
+      <span class="ac-petal" style="left:64%; top:12%; animation-delay:-3s; width:14px; height:14px"></span>
+      <span class="ac-petal" style="left:40%; top:30%; animation-delay:-5s; width:12px; height:12px"></span>
+      <span class="ac-petal" style="left:59%; top:34%; animation-delay:-2s"></span>
+      <span class="ac-petal" style="left:14%; top:24%; animation-delay:-6s; width:13px; height:13px"></span>
+      <span class="ac-petal" style="left:84%; top:40%; animation-delay:-4s; width:15px; height:15px"></span>
+      <span class="ac-petal" style="left:74%; top:20%; animation-delay:-2.5s; width:10px; height:10px"></span>
+    </div>
+
+    <div class="rv-dialog">
+      <div class="ac-box rv-box is-done" id="rv-box">
+        <span class="ac-namechip">Resident Services</span>
+        <span class="ac-tag ac-tag--blue rv-news" aria-hidden="true">Island news!</span>
+        <span class="rv-line" id="rv-line" aria-hidden="true">Allyssa is <span class="ac-hl">moving up</span>!</span>
+        <span class="ac-sr" id="rv-line-sr">Allyssa is moving up!</span>
+        <span class="rv-sub">After <span id="rv-years-sub">2</span> years as <span id="rv-son-sub">Keone</span>’s stay-at-home mom, she is starting a new job on <span id="rv-date-sub">October 4th</span>.</span>
+        <span class="ac-next" aria-hidden="true"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= BEAT 3 ======================= -->
+  <section class="rv-stage rv-achv" id="rv-achv" aria-labelledby="rv-achv-title">
+    <p class="rv-beat" aria-hidden="true">BEAT 3 — THE ACHIEVEMENT</p>
+    <div class="rv-rays" aria-hidden="true"></div>
+
+    <article class="ac-card rv-card">
+      <span class="ac-stamp rv-stamp" aria-hidden="true">Hired!</span>
+      <div class="rv-card__head">
+        <span class="rv-miles" aria-hidden="true"><span class="ac-leaf"></span></span>
+        <span class="ac-tag ac-tag--blue">Nook Miles+ · Achievement unlocked</span>
+      </div>
+      <h2 id="rv-achv-title">CAREER CHANGE!</h2>
+      <p class="rv-card__lead">After <span id="rv-years-1">2</span> years as <span id="rv-son-1">Keone</span>’s stay-at-home mom, <span id="rv-name-1">Allyssa</span> is starting a new job on <span id="rv-date-achievement">October 4th</span>.</p>
+
+      <div class="rv-card__row">
+        <div class="ac-ticket">
+          <div class="ac-ticket__label">Confirmed milestone</div>
+          <div class="ac-ticket__value">New job</div>
+        </div>
+        <div class="rv-counter">
+          <div class="rv-counter__top">New chapter <small id="rv-date-counter">October 4th</small></div>
+          <div class="rv-bar" aria-hidden="true"><span></span></div>
+          <p>The job title and workplace have not been supplied.</p>
+        </div>
+      </div>
+
+      <div class="rv-tags">
+        <span class="ac-tag ac-tag--gold">Details can be added when supplied</span>
+      </div>
+    </article>
+  </section>
+
+  <!-- ======================= BEAT 4 ======================= -->
+  <section class="rv-stage rv-letter-stage" id="rv-letter" aria-labelledby="rv-letter-title">
+    <p class="rv-beat" aria-hidden="true">BEAT 4 — THE LETTER</p>
+    <h2 id="rv-letter-title" class="ac-sr">A letter from Allyssa</h2>
+
+    <article class="rv-letter">
+      <div class="rv-post" aria-hidden="true">
+        <div class="rv-post__stamp"><span class="ac-leaf"></span></div>
+        <svg class="rv-post__mark" viewBox="0 0 96 96">
+          <circle cx="48" cy="48" r="40"/>
+          <circle cx="48" cy="48" r="30"/>
+          <text x="48" y="45" text-anchor="middle">ISLAND</text>
+          <text x="48" y="60" text-anchor="middle">POST</text>
+          <path class="wave" d="M88 34 q8 -6 16 0 t16 0 t16 0 M88 48 q8 -6 16 0 t16 0 t16 0 M88 62 q8 -6 16 0 t16 0 t16 0"/>
+        </svg>
+      </div>
+
+      <div class="rv-hand">
+        <p class="rv-dear">Dear everyone,</p>
+        <p>After <span id="rv-years-2">2</span> years as <span class="ac-hl" id="rv-son-2">Keone</span>’s stay-at-home mom, I’m starting a new job.</p>
+        <p>My first day is <span id="rv-date-inline">October 4th</span>.</p>
+        <p class="rv-sign">— <span id="rv-sig">Allyssa</span><svg class="rv-heart" viewBox="0 0 20 18" aria-hidden="true"><path d="M10 17 C4 12 0 9 0 5 C0 2 2 0 5 0 C7 0 9 1 10 3 C11 1 13 0 15 0 C18 0 20 2 20 5 C20 9 16 12 10 17 Z"/></svg></p>
+        <p class="rv-ps">P.S. More job details can be added when they are supplied.</p>
+      </div>
+
+      <div class="rv-date" role="img" aria-label="First day: October 4th">
+        <span class="rv-date__tape" aria-hidden="true"></span>
+        <span class="rv-sparkle" style="left:-22px; top:34%" aria-hidden="true"></span>
+        <span class="rv-sparkle" style="right:-18px; top:14%" aria-hidden="true"></span>
+        <span class="rv-sparkle" style="right:-10px; bottom:12%" aria-hidden="true"></span>
+        <svg class="rv-circle" viewBox="0 0 420 480" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M210 14 C330 8 408 90 406 236 C404 380 330 466 206 468 C82 470 12 384 14 238 C16 110 84 22 226 20"/>
+        </svg>
+        <div class="rv-cal">
+          <span class="rv-cal__month" id="rv-month">OCTOBER</span>
+          <span class="rv-cal__day" id="rv-day">4<sup>TH</sup></span>
+          <span class="ac-tag ac-tag--gold rv-firstday">FIRST DAY</span>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ======================= FINALE ======================= -->
+  <section class="rv-stage rv-finale" id="rv-finale" aria-labelledby="rv-congrats">
+    <p class="rv-beat" aria-hidden="true">FINALE — CELEBRATION</p>
+    <div class="rv-bunting" id="rv-bunting" aria-hidden="true"></div>
+    <div class="rv-confetti" id="rv-confetti" aria-hidden="true"></div>
+    <div class="ac-petals" aria-hidden="true">
+      <span class="ac-petal" style="left:8%;  top:34%; animation-delay:-1s"></span>
+      <span class="ac-petal" style="left:20%; top:62%; animation-delay:-4s; width:14px; height:14px"></span>
+      <span class="ac-petal" style="left:33%; top:22%; animation-delay:-2s; width:12px; height:12px"></span>
+      <span class="ac-petal" style="left:68%; top:26%; animation-delay:-6s"></span>
+      <span class="ac-petal" style="left:80%; top:58%; animation-delay:-3s; width:15px; height:15px"></span>
+      <span class="ac-petal" style="left:91%; top:30%; animation-delay:-5s; width:11px; height:11px"></span>
+      <span class="ac-petal" style="left:56%; top:70%; animation-delay:-7s; width:13px; height:13px"></span>
+    </div>
+
+    <div class="rv-finale__inner">
+      <span class="ac-tag ac-tag--pink">From everyone at <span id="rv-venue">Thuy and Melissa's house</span></span>
+      <h2 class="rv-congrats" id="rv-congrats">Congratulations, Allyssa!</h2>
+      <p class="rv-finale__sub">A new job begins <b id="rv-date-finale">October 4th</b>.</p>
+      <button class="ac-btn rv-replay" id="rv-replay" type="button">
+        <span class="ac-key ac-key--a" aria-hidden="true">A</span> Play it again
+      </button>
+    </div>
+
+    <div class="rv-hill" aria-hidden="true"></div>
+    <div class="rv-finale__allyssa">
+      <img src="../../assets/allyssa-stand.svg" alt="Allyssa hopping happily on the hill, celebrating the news.">
+    </div>
+    <div class="rv-finale__bubble" aria-hidden="true">♪</div>
+  </section>
+</main>
+
+<div class="rv-badge" aria-hidden="true">DATA: MOCKUP</div>
+
+<script>
+(function () {
+  'use strict';
+  var C = window.AC_CONFIG || {};
+  var NAME = C.name || 'Allyssa';
+  var SON = C.son || 'Keone';
+  var VENUE = C.venue || "Thuy and Melissa's house";
+  var DATE = C.jobStartText || 'October 4th';
+  var YEARS = Number.isFinite(C.stayAtHomeYears) ? C.stayAtHomeYears : 2;
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function $(id) { return document.getElementById(id); }
+  function setText(id, t) { var el = $(id); if (el) el.textContent = t; }
+
+  /* ---------- config-driven strings ---------- */
+  setText('rv-sig', NAME); setText('rv-name-1', NAME);
+  setText('rv-son-1', SON); setText('rv-son-2', SON); setText('rv-son-sub', SON);
+  setText('rv-years-1', YEARS); setText('rv-years-2', YEARS); setText('rv-years-sub', YEARS);
+  setText('rv-venue', VENUE); setText('rv-line-sr', NAME + ' is moving up!');
+  setText('rv-date-inline', DATE); setText('rv-date-finale', DATE); setText('rv-date-sub', DATE); setText('rv-date-achievement', DATE); setText('rv-date-counter', DATE);
+  (function () {
+    var parts = DATE.split(' ');
+    var month = (parts[0] || 'October').toUpperCase();
+    var m = /^(\d+)(\D*)$/.exec(parts[1] || '4th');
+    $('rv-month').textContent = month;
+    var day = $('rv-day');
+    day.textContent = m ? m[1] : (parts[1] || '');
+    if (m && m[2]) { var s = document.createElement('sup'); s.textContent = m[2].toUpperCase(); day.appendChild(s); }
+    document.querySelector('.rv-date').setAttribute('aria-label', 'First day: ' + DATE);
+  })();
+
+  /* ---------- sound (never autoplays; opt-in via the toggle) ---------- */
+  var soundOn = false;
+  function canPlay() {
+    if (!soundOn || !window.ACSound) return false;
+    try { if (ACSound.isMuted && ACSound.isMuted()) return false; } catch (e) { return false; }
+    return true;
+  }
+  function snd(name) {
+    if (!canPlay()) return;
+    try { if (ACSound[name]) ACSound[name](); } catch (e) {}
+  }
+  var soundBtn = $('rv-sound');
+  soundBtn.addEventListener('click', function () {
+    soundOn = !soundOn;
+    try {
+      if (window.ACSound) {
+        if (soundOn && ACSound.init) ACSound.init();
+        if (ACSound.setMuted) ACSound.setMuted(!soundOn || (C.audio && C.audio.enabled === false));
+      }
+    } catch (e) {}
+    soundBtn.setAttribute('aria-pressed', String(soundOn));
+    $('rv-sound-label').textContent = soundOn ? 'Sound: on' : 'Sound: off';
+    snd('select');
+  });
+
+  /* ---------- BEAT 2: typewriter ---------- */
+  var box = $('rv-box'), line = $('rv-line'), emote = $('rv-emote');
+  var SEGS = [[NAME + ' is '], ['moving up', 'ac-hl'], ['!']];
+  var timer = null, typing = false;
+  function typeAnnouncement() {
+    clearTimeout(timer);
+    box.classList.remove('is-done');
+    emote.classList.remove('is-on');
+    line.textContent = '';
+    var nodes = SEGS.map(function (s) {
+      var el = document.createElement('span');
+      if (s[1]) el.className = s[1];
+      line.appendChild(el);
+      return el;
+    });
+    function done() {
+      typing = false;
+      line.classList.remove('ac-caret');
+      for (var i = 0; i < SEGS.length; i++) nodes[i].textContent = SEGS[i][0];
+      box.classList.add('is-done');
+      emote.classList.add('is-on');
+      if (!reduce) { emote.classList.remove('ac-pop'); void emote.offsetWidth; emote.classList.add('ac-pop'); }
+      snd('confirm');
+    }
+    if (reduce) { done(); return; }
+    typing = true;
+    line.classList.add('ac-caret');
+    var si = 0, ci = 0;
+    (function tick() {
+      if (si >= SEGS.length) return done();
+      var t = SEGS[si][0];
+      ci++;
+      nodes[si].textContent = t.slice(0, ci);
+      var ch = t.charAt(ci - 1);
+      if (ch && ch !== ' ') snd('blip');
+      if (ci >= t.length) { si++; ci = 0; }
+      timer = setTimeout(tick, /[!.,]/.test(ch) ? 180 : 60);
+    })();
+  }
+
+  /* ---------- BEAT 3: slam in on view ---------- */
+  var achv = $('rv-achv');
+  var achvPlayed = false;
+  function slam() {
+    if (achvPlayed) return;
+    achvPlayed = true;
+    achv.classList.add('is-in');
+    if (!reduce) achv.classList.add('is-shake');
+    setTimeout(function () { snd('stamp'); }, reduce ? 0 : 650);
+    setTimeout(function () { snd('fanfare'); }, reduce ? 150 : 950);
+  }
+  function resetSlam() {
+    achvPlayed = false;
+    achv.classList.remove('is-in', 'is-shake');
+    void achv.offsetWidth;
+  }
+
+  /* ---------- BEAT 4: date pops ---------- */
+  var letter = $('rv-letter');
+
+  /* ---------- observers ---------- */
+  var announceTyped = false;
+  function arm(el) { if (!reduce && !el.classList.contains('is-in')) el.classList.add('is-armed'); }
+  if ('IntersectionObserver' in window) {
+    // arm as soon as the first pixel appears (off-screen edge), so there's no visible flash
+    var armIO = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) arm(en.target); });
+    }, { threshold: 0 });
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        if (en.target.id === 'rv-announce' && !announceTyped) { announceTyped = true; typeAnnouncement(); }
+        if (en.target.id === 'rv-achv') slam();
+        if (en.target.id === 'rv-letter') letter.classList.add('is-in');
+      });
+    }, { threshold: 0.4 });
+    [achv, letter].forEach(function (el) { armIO.observe(el); });
+    ['rv-announce', 'rv-achv', 'rv-letter'].forEach(function (id) { io.observe($(id)); });
+  } else {
+    typeAnnouncement(); slam(); letter.classList.add('is-in');
+  }
+
+  /* ---------- FINALE: bunting, confetti, wavy title ---------- */
+  var bunting = $('rv-bunting');
+  for (var b = 0; b < 30; b++) { var f = document.createElement('span'); f.className = 'rv-flag'; bunting.appendChild(f); }
+
+  var seed = 7;
+  function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+  var conf = $('rv-confetti');
+  var shapes = ['', 'round', 'strip'];
+  for (var i = 0; i < 70; i++) {
+    var p = document.createElement('span');
+    p.className = 'rv-conf c' + (i % 6) + ' ' + shapes[i % 3];
+    var d = 5 + rnd() * 5;
+    p.style.left = (rnd() * 100).toFixed(2) + '%';
+    p.style.setProperty('--d', d.toFixed(2) + 's');
+    p.style.setProperty('--delay', (-rnd() * d).toFixed(2) + 's');
+    p.style.setProperty('--r', Math.round(rnd() * 360) + 'deg');
+    p.style.setProperty('--sway', Math.round((rnd() - .5) * 120) + 'px');
+    p.style.setProperty('--top', (rnd() * 90).toFixed(1) + '%');
+    conf.appendChild(p);
+  }
+
+  var title = $('rv-congrats');
+  var titleText = 'Congratulations, ' + NAME + '!';
+  title.setAttribute('aria-label', titleText);
+  title.textContent = '';
+  var k = 0;
+  titleText.split(' ').forEach(function (word, wi, arr) {
+    var w = document.createElement('span');
+    w.className = 'w'; w.setAttribute('aria-hidden', 'true');
+    word.split('').forEach(function (ch) {
+      var c = document.createElement('span');
+      c.className = 'ch'; c.textContent = ch;
+      c.style.animationDelay = (k++ * 0.06) + 's';
+      w.appendChild(c);
+    });
+    title.appendChild(w);
+    if (wi < arr.length - 1) title.appendChild(document.createTextNode(' '));
+  });
+
+  /* ---------- replay ---------- */
+  $('rv-replay').addEventListener('click', function () {
+    snd('select');
+    resetSlam(); arm(achv);
+    letter.classList.remove('is-in'); arm(letter);
+    announceTyped = true;
+    var target = $('rv-announce');
+    target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    setTimeout(typeAnnouncement, reduce ? 0 : 550);
+    // let the observers re-trigger beats 3 and 4 as the viewer scrolls back down
+    if ('IntersectionObserver' in window) {
+      setTimeout(function () {
+        var r = achv.getBoundingClientRect();
+        if (r.top < innerHeight && r.bottom > 0) slam();
+        var l = letter.getBoundingClientRect();
+        if (l.top < innerHeight && l.bottom > 0) letter.classList.add('is-in');
+      }, 900);
+    } else { slam(); letter.classList.add('is-in'); }
+  });
+})();
+</script>
+</body>
+</html>

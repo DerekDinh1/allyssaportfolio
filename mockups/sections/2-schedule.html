@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Day in the Life — Allyssa's Schedule (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat:wght@600;700&family=Nunito:wght@500;700;800&display=swap">
+<link rel="stylesheet" href="../../assets/tokens.css">
+<link rel="stylesheet" href="../../assets/base.css">
+<style>
+  /* ---- section-local styles only; primitives come from base.css ---- */
+  :root {
+    --day-emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    --day-rule: color-mix(in srgb, var(--ac-leaf) 22%, transparent);
+    --day-shade: color-mix(in srgb, var(--ac-ink) 16%, transparent);
+  }
+
+  body { background: var(--ac-leaf-light); }
+
+  .day {
+    position: relative;
+    min-height: 100vh;
+    padding: var(--sp-6) 0 var(--sp-7);
+    overflow: hidden;
+    /* green gingham tablecloth */
+    background:
+      repeating-linear-gradient(0deg, color-mix(in srgb, var(--ac-white) 22%, transparent) 0 22px, transparent 22px 44px),
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--ac-white) 22%, transparent) 0 22px, transparent 22px 44px),
+      var(--ac-leaf-light);
+  }
+  .day > .ac-wrap { position: relative; z-index: var(--z-ui); }
+
+  /* ---------- the stationery sheet ---------- */
+  .sheet {
+    position: relative;
+    background:
+      linear-gradient(90deg, transparent 58px, color-mix(in srgb, var(--ac-pink) 55%, transparent) 58px 60px, transparent 60px),
+      repeating-linear-gradient(180deg, transparent 0 31px, var(--day-rule) 31px 32px),
+      var(--ac-paper);
+    border-radius: var(--r-lg);
+    box-shadow: var(--sh-3);
+    padding: var(--sp-6) var(--sp-6) var(--sp-6) calc(60px + var(--sp-5));
+  }
+  /* binder holes */
+  .sheet::before {
+    content: '';
+    position: absolute;
+    left: 20px; top: 40px; bottom: 40px; width: 18px;
+    background: radial-gradient(circle 8px at 9px 50%, var(--ac-leaf-light) 97%, transparent 100%) 0 0 / 18px 120px repeat-y;
+  }
+  /* washi tape */
+  .tape {
+    position: absolute;
+    top: -14px;
+    width: 130px; height: 30px;
+    background: repeating-linear-gradient(45deg,
+      color-mix(in srgb, var(--ac-pink) 70%, transparent) 0 8px,
+      color-mix(in srgb, var(--ac-paper) 70%, transparent) 8px 16px);
+    box-shadow: var(--sh-1);
+    opacity: .9;
+  }
+  .tape--l { left: 12%; transform: rotate(-4deg); }
+  .tape--r { right: 10%; transform: rotate(3deg);
+    background: repeating-linear-gradient(45deg,
+      color-mix(in srgb, var(--ac-leaf) 60%, transparent) 0 8px,
+      color-mix(in srgb, var(--ac-paper) 70%, transparent) 8px 16px); }
+
+  /* ---------- header ---------- */
+  .day__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--sp-5);
+    align-items: end;
+    margin-bottom: var(--sp-5);
+  }
+  .day__kicker {
+    font-family: var(--ac-font-hand);
+    font-size: 1.7rem;
+    color: var(--ac-ink-soft);
+    margin: 0 0 var(--sp-1);
+    display: inline-block;
+    transform: rotate(-2deg);
+  }
+  .day__sub { margin: var(--sp-2) 0 0; max-width: 58ch; }
+  .day__note {
+    display: flex; align-items: center; gap: var(--sp-3);
+    background: var(--ac-cream);
+    border: 2px dashed var(--ac-leaf);
+    border-radius: var(--r-md);
+    padding: var(--sp-3) var(--sp-4);
+    max-width: 330px;
+    transform: rotate(1.5deg);
+    font-size: var(--ac-fs-small);
+  }
+  .day__note b { font-family: var(--ac-font-ui); color: var(--ac-leaf-deep); }
+  .day__leafimg { width: 40px; height: 40px; flex: none; }
+
+  /* ---------- timeline ---------- */
+  .timeline {
+    list-style: none; margin: 0; padding: var(--sp-4) 0 0;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-6) var(--sp-5);
+    counter-reset: stop;
+  }
+  /* dotted walking path in the gap between neighbouring cards */
+  .moment:not(:nth-child(3n))::before {
+    content: '';
+    position: absolute;
+    left: 100%; top: 58px;
+    width: var(--sp-5);
+    border-top: 5px dotted var(--ac-leaf);
+  }
+
+  .moment {
+    position: relative;
+    z-index: 1;
+    counter-increment: stop;
+    display: grid;
+    gap: var(--sp-3);
+    padding: var(--sp-5) var(--sp-4) var(--sp-4);
+    transition: transform var(--t-mid) var(--ease-bounce);
+  }
+  .moment:nth-child(odd)  { transform: rotate(-.8deg); }
+  .moment:nth-child(even) { transform: rotate(.8deg); }
+  .moment:hover { transform: translateY(-4px) rotate(0); }
+
+  .moment__top { display: flex; align-items: center; gap: var(--sp-3); }
+  .moment__icon {
+    flex: none;
+    width: 76px; aspect-ratio: 1;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--ac-paper);
+    border: 4px solid var(--ac-leaf-light);
+    box-shadow: 0 4px 0 var(--day-shade);
+    font-family: var(--day-emoji);
+    font-size: 2.3rem; line-height: 1;
+    position: relative;
+  }
+  .moment__icon::after {
+    content: counter(stop);
+    position: absolute;
+    right: -6px; top: -6px;
+    width: 26px; height: 26px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--ac-leaf-deep);
+    color: var(--ac-white);
+    font-family: var(--ac-font-ui); font-weight: 800; font-size: .85rem;
+    box-shadow: 0 2px 0 var(--day-shade);
+  }
+  .moment__time {
+    font-family: var(--ac-font-ui); font-weight: 800;
+    font-size: var(--ac-fs-small);
+    color: var(--ac-leaf-deep);
+    margin: 0;
+  }
+  .moment__time span {
+    display: inline-block;
+    margin-left: var(--sp-1);
+    font-size: .68rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ac-ink-soft);
+    border: 1.5px dashed var(--ac-ink-soft);
+    border-radius: var(--r-pill);
+    padding: 0 .55em;
+    vertical-align: .1em;
+  }
+  .moment__title { font-size: var(--ac-fs-h3); margin: 2px 0 0; }
+  .moment__cap {
+    margin: 0;
+    font-family: var(--ac-font-hand);
+    font-size: 1.5rem;
+    line-height: 1.15;
+    color: var(--ac-ink);
+  }
+  .moment__foot {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--sp-2); flex-wrap: wrap;
+  }
+
+  /* checkbox-style sticker toggle */
+  .tick {
+    display: inline-flex; align-items: center; gap: .5em;
+    font: 800 var(--ac-fs-small) / 1 var(--ac-font-ui);
+    color: var(--ac-ink);
+    background: var(--ac-cream-deep);
+    border: 0;
+    border-radius: var(--r-pill);
+    padding: .5em 1em .55em .6em;
+    box-shadow: 0 3px 0 var(--ac-cream-edge);
+    cursor: pointer;
+    transition: transform var(--t-fast) var(--ease-bounce), background var(--t-fast) var(--ease-soft);
+  }
+  .tick__box {
+    width: 1.35em; height: 1.35em;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--ac-paper);
+    box-shadow: inset 0 0 0 2px var(--ac-cream-edge);
+    color: transparent;
+    font-size: .95em;
+  }
+  .tick[aria-pressed="true"] { background: var(--ac-leaf-light); color: var(--ac-white); text-shadow: 0 1px 2px var(--day-shade); }
+  .tick[aria-pressed="true"] .tick__box { background: var(--ac-leaf-deep); box-shadow: none; color: var(--ac-white); }
+  .tick:hover { transform: scale(1.04); }
+  .tick:active { transform: scale(.96); }
+  .tick:focus-visible { outline: 4px solid var(--ac-nook-blue); outline-offset: 3px; }
+
+  .moment--now .moment__icon { border-color: var(--ac-gold); }
+  .now-flag {
+    position: absolute;
+    top: -14px; right: var(--sp-4);
+    font-family: var(--ac-font-ui); font-weight: 800; font-size: .78rem;
+    background: var(--ac-pink-deep); color: var(--ac-white);
+    padding: .2em .8em .28em;
+    border-radius: var(--r-pill);
+    box-shadow: 0 3px 0 var(--day-shade);
+  }
+
+  /* ---------- footer strip ---------- */
+  .day__foot {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--sp-4); flex-wrap: wrap;
+    margin-top: var(--sp-6);
+  }
+  .day__progress {
+    font-family: var(--ac-font-ui); font-weight: 800;
+    color: var(--ac-ink-soft);
+    margin: 0;
+  }
+  .day__progress b { color: var(--ac-leaf-deep); }
+  .day__prompts { display: flex; gap: var(--sp-5); flex-wrap: wrap; }
+
+  /* ---------- mockup badge (matches other mockups) ---------- */
+  .mock-badge {
+    position: fixed;
+    top: var(--sp-3); right: var(--sp-3);
+    z-index: var(--z-modal);
+    pointer-events: none;
+    font-family: var(--ac-font-ui); font-weight: 800;
+    font-size: .72rem; letter-spacing: .12em;
+    color: var(--ac-ink-soft);
+    background: var(--ac-paper);
+    border: 2px dashed var(--ac-cream-edge);
+    border-radius: var(--r-pill);
+    padding: .25em .9em;
+    opacity: .75;
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 1080px) {
+    .timeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .moment:not(:nth-child(3n))::before { display: none; }
+  }
+  @media (max-width: 720px) {
+    .day__head { grid-template-columns: minmax(0, 1fr); }
+    .timeline { grid-template-columns: minmax(0, 1fr); gap: var(--sp-5); }
+    .sheet { padding: var(--sp-5) var(--sp-4) var(--sp-5) calc(40px + var(--sp-3)); background:
+      linear-gradient(90deg, transparent 38px, color-mix(in srgb, var(--ac-pink) 55%, transparent) 38px 40px, transparent 40px),
+      repeating-linear-gradient(180deg, transparent 0 31px, var(--day-rule) 31px 32px),
+      var(--ac-paper); }
+    .sheet::before { left: 10px; }
+    .moment__icon { width: 62px; font-size: 1.9rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .moment, .tick { transition: none; }
+    .moment:hover, .tick:hover, .tick:active { transform: none; }
+    .moment:nth-child(odd), .moment:nth-child(even) { transform: none; }
+    .ac-petal, .ac-next { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<span class="mock-badge" aria-hidden="true">DATA: MOCKUP</span>
+
+<main>
+  <section class="day" aria-labelledby="day-title">
+    <div class="ac-petals" aria-hidden="true">
+      <span class="ac-petal" style="left:3%;top:12%"></span>
+      <span class="ac-petal" style="left:52%;top:3%"></span>
+      <span class="ac-petal" style="left:96%;top:30%"></span>
+      <span class="ac-petal" style="left:94%;top:88%"></span>
+      <span class="ac-petal" style="left:1%;top:70%"></span>
+    </div>
+
+    <div class="ac-wrap">
+      <div class="sheet">
+        <span class="tape tape--l" aria-hidden="true"></span>
+        <span class="tape tape--r" aria-hidden="true"></span>
+
+        <header class="day__head">
+          <div>
+            <p class="day__kicker">02 / 05</p>
+            <h2 id="day-title" class="ac-heading"><span class="ac-leaf" aria-hidden="true"></span>A Day in the Life</h2>
+            <p class="day__sub">Add the real activities and times that belong in <span class="ac-hl">Allyssa</span>'s daily life.</p>
+          </div>
+          <p class="day__note">
+            <img class="day__leafimg" src="../../assets/leaf.svg" width="64" height="64" alt="">
+            <span><b>Blank fields.</b> No routine has been assumed; add each activity and time after they are supplied.</span>
+          </p>
+        </header>
+
+        <ol class="timeline" aria-label="Blank daily-life fields">
+          <li class="moment ac-card">
+            <div class="moment__top">
+              <div class="moment__icon" aria-hidden="true">＋</div>
+              <div>
+                <p class="moment__time">Time: <span>Add time</span></p>
+                <h3 class="moment__title">Activity: Add your fact</h3>
+              </div>
+            </div>
+            <p class="moment__cap">Details: Add your fact</p>
+          </li>
+          <li class="moment ac-card">
+            <div class="moment__top">
+              <div class="moment__icon" aria-hidden="true">＋</div>
+              <div>
+                <p class="moment__time">Time: <span>Add time</span></p>
+                <h3 class="moment__title">Activity: Add your fact</h3>
+              </div>
+            </div>
+            <p class="moment__cap">Details: Add your fact</p>
+          </li>
+          <li class="moment ac-card">
+            <div class="moment__top">
+              <div class="moment__icon" aria-hidden="true">＋</div>
+              <div>
+                <p class="moment__time">Time: <span>Add time</span></p>
+                <h3 class="moment__title">Activity: Add your fact</h3>
+              </div>
+            </div>
+            <p class="moment__cap">Details: Add your fact</p>
+          </li>
+        </ol>
+
+        <div class="day__foot">
+          <p class="day__progress"><b>Nothing filled in yet.</b> These are presentation placeholders only.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+</body>
+</html>

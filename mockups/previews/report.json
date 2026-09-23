@@ -1,0 +1,730 @@
+{
+  "generatedAt": "2026-09-23T04:59:17.091Z",
+  "chrome": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "node": "v26.8.1",
+  "reducedMotion": "reduce",
+  "fullpageMax": 6500,
+  "pages": {
+    "1-opening": {
+      "source": "mockups/sections/1-opening.html",
+      "views": {
+        "desktop": {
+          "viewport": "1440x900",
+          "dpr": 1,
+          "shots": {
+            "desktop": {
+              "file": "mockups/previews/1-opening-desktop.png",
+              "bytes": 319930,
+              "ok": true
+            }
+          },
+          "console": [],
+          "exceptions": [],
+          "failedRequests": [],
+          "errors": [],
+          "fontsReady": "ready",
+          "metrics": {
+            "title": "Allyssa's Island — Morning Announcement (Mockup 01)",
+            "scrollWidth": 1440,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "documentHeight": 900,
+            "horizontalOverflow": false,
+            "overflowOffenders": [],
+            "images": {
+              "total": 2,
+              "missing": [],
+              "pending": []
+            },
+            "fonts": {
+              "status": "loaded",
+              "loaded": [
+                "Baloo 2 600",
+                "Baloo 2 700",
+                "Baloo 2 800",
+                "Nunito 400"
+              ]
+            },
+            "reducedMotion": true
+          },
+          "textState": {
+            "opLine": "Right now at Thuy and Melissa's house, it's 10:59 PM on Tuesday, September 22nd.",
+            "rvLine": null
+          },
+          "beats": []
+        },
+        "mobile": {
+          "viewport": "390x844",
+          "dpr": 1,
+          "shots": {
+            "mobile": {
+              "file": "mockups/previews/1-opening-mobile.png",
+              "bytes": 110649,
+              "ok": true
+            }
+          },
+          "console": [],
+          "exceptions": [],
+          "failedRequests": [],
+          "errors": [],
+          "fontsReady": "ready",
+          "metrics": {
+            "title": "Allyssa's Island — Morning Announcement (Mockup 01)",
+            "scrollWidth": 390,
+            "clientWidth": 390,
+            "clientHeight": 844,
+            "documentHeight": 844,
+            "horizontalOverflow": false,
+            "overflowOffenders": [],
+            "images": {
+              "total": 2,
+              "missing": [],
+              "pending": []
+            },
+            "fonts": {
+              "status": "loaded",
+              "loaded": [
+                "Baloo 2 600",
+                "Baloo 2 700",
+                "Baloo 2 800",
+                "Nunito 400"
+              ]
+            },
+            "reducedMotion": true
+          },
+          "textState": {
+            "opLine": "Right now at Thuy and Melissa's house, it's 10:59 PM on Tuesday, September 22nd.",
+            "rvLine": null
+          }
+        }
+      }
+    },
+    "2-schedule": {
+      "source": "mockups/sections/2-schedule.html",
+      "views": {
+        "desktop": {
+          "viewport": "1440x900",
+          "dpr": 1,
+          "shots": {
+            "desktop": {
+              "file": "mockups/previews/2-schedule-desktop.png",
+              "bytes": 228848,
+              "ok": true
+            }
+          },
+          "console": [],
+          "exceptions": [],
+          "failedRequests": [],
+          "errors": [],
+          "fontsReady": "ready",
+          "metrics": {
+            "title": "A Day in the Life — Allyssa's Schedule (mockup)",
+            "scrollWidth": 1440,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "documentHeight": 900,
+            "horizontalOverflow": false,
+            "overflowOffenders": [],
+            "images": {
+              "total": 1,
+              "missing": [],
+              "pending": []
+            },
+            "fonts": {
+              "status": "loaded",
+              "loaded": [
+                "Baloo 2 700",
+                "Baloo 2 800",
+                "Caveat 600",
+                "Nunito 500",
+                "Nunito 800"
+              ]
+            },
+            "reducedMotion": true
+          },
+          "textState": {
+            "opLine": null,
+            "rvLine": null
+          },
+          "beats": []
+        },
+        "mobile": {
+          "viewport": "390x844",
+          "dpr": 1,
+          "shots": {
+            "mobile": {
+              "file": "mockups/previews/2-schedule-mobile.png",
+              "bytes": 101341,
+              "ok": true
+            }
+          },
+          "console": [],
+          "exceptions": [],
+          "failedRequests": [],
+          "errors": [],
+          "fontsReady": "ready",
+          "metrics": {
+            "title": "A Day in the Life — Allyssa's Schedule (mockup)",
+            "scrollWidth": 390,
+            "clientWidth": 390,
+            "clientHeight": 844,
+            "documentHeight": 1950,
+            "horizontalOverflow": false,
+            "overflowOffenders": [],
+            "images": {
+              "total": 1,
+              "missing": [],
+              "pending": []
+            },
+            "fonts": {
+              "status": "loaded",
+              "loaded": [
+                "Baloo 2 700",
+                "Baloo 2 800",
+                "Caveat 600",
+                "Nunito 500",
+                "Nunito 800"
+              ]
+            },
+            "reducedMotion": true
+          },
+          "textState": {
+            "opLine": null,
+            "rvLine": null
+          }
+        }
+      }
+    },
+    "3-inventory": {
+      "source": "mockups/sections/3-inventory.html",
+      "views": {
+        "desktop": {
+          "viewport": "1440x900",
+          "dpr": 1,
+          "shots": {
+            "desktop": {
+              "file": "mockups/previews/3-inventory-desktop.png",
+              "bytes": 192029,
+              "ok": true
+            }
+          },
+          "console": [],
+          "exceptions": [],
+          "failedRequests": [],
+          "errors": [],
+          "fontsReady": "ready",
+          "metrics": {
+            "title": "Tools of the Trade — Allyssa's Pockets (mockup)",
+            "scrollWidth": 1440,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "documentHeight": 900,
+            "horizontalOverflow": false,
+            "overflowOffenders": [],
+            "images": {
+              "total": 1,
+              "missing": [],
+              "pending": []
+            },
+            "fonts": {
+              "status": "loaded",
+              "loaded": [
+                "Baloo 2 700",
+                "Baloo 2 800",
+                "Caveat 600",
+                "Nunito 500",
+                "Nunito 700",
+                "Nunito 800"
+              ]
+            },
+            "reducedMotion": true
+          },
+          "textState": {
+            "opLine": null,
+            "rvLine": null
+          },
+          "beats": []
+        },
+        "mobile": {
+          "viewport": "390x844",
+          "dpr": 1,
+          "shots": {
+            "mobile": {
+              "file": "mockups/previews/3-inventory-mobile.png",
+              "bytes": 95701,
+              "ok": true
+            }
+          },
+          "console": [],
+          "exceptions": [],
+          "failedRequests": [],
+          "errors": [],
+          "fontsReady": "ready",
+          "metrics": {
+            "title": "Tools of the Trade — Allyssa's Pockets (mockup)",
+            "scrollWidth": 390,
+            "clientWidth": 390,
+            "clientHeight": 844,
+            "documentHeight": 1022,
+            "horizontalOverflow": false,
+            "overflowOffenders": [],
+            "images": {
+              "total": 1,
+              "missing": [],
+              "pending": []
+            },
+            "fonts": {
+              "status": "loaded",
+              "loaded": [
+                "Baloo 2 700",
+                "Baloo 2 800",
+                "Caveat 600",
+                "Nunito 500",
+                "Nunito 700",
+                "Nunito 800"
+              ]
+            },
+            "reducedMotion": true
+          },
+          "textState": {
+            "opLine": null,
+            "rvLine": null
+          }
+        }
+      }
+    },
+    "4-stats": {
+      "source": "mockups/sections/4-stats.html",
+      "views": {
+        "desktop": {
+          "viewport": "1440x900",
+          "dpr": 1,
+          "shots": {
+            "desktop": {
+              "file": "mockups/previews/4-stats-desktop.png",
+              "bytes": 342003,
+              "ok": true
+            },
+            "fullpage": {
+              "file": "mockups/previews/4-stats-fullpage.png",
+              "bytes": 353799,
+              "ok": true,
+              "clip": {
+                "x": 0,
+                "y": 0,
+                "width": 1440,
+                "height": 988,
+                "scale": 1
+              }
+            }
+          },
+          "console": [],
+          "exceptions": [],
+          "failedRequests": [],
+          "errors": [],
+          "fontsReady": "ready",
+          "metrics": {
+            "title": "Resident Stats — Allyssa's Nook Miles (mockup)",
+            "scrollWidth": 1440,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "documentHeight": 988,
+            "horizontalOverflow": false,
+            "overflowOffenders": [],
+            "images": {
+              "total": 2,
+              "missing": [],
+              "pending": []
+            },
+            "fonts": {
+              "status": "loaded",
+              "loaded": [
+                "Baloo 2 700",
+                "Baloo 2 800",
+                "Caveat 600",
+                "Caveat 700",
+                "Nunito 500",
+                "Nunito 700",
+                "Nunito 800"
+              ]
+            },
+            "reducedMotion": true
+          },
+          "textState": {
+            "opLine": null,
+            "rvLine": null
+          },
+          "fullpageTruncated": false,
+          "beats": []
+        },
+        "mobile": {
+          "viewport": "390x844",
+          "dpr": 1,
+          "shots": {
+            "mobile": {
+              "file": "mockups/previews/4-stats-mobile.png",
+              "bytes": 137726,
+              "ok": true
+            }
+          },
+          "console": [],
+          "exceptions": [],
+          "failedRequests": [],
+          "errors": [],
+          "fontsReady": "ready",
+          "metrics": {
+            "title": "Resident Stats — Allyssa's Nook Miles (mockup)",
+            "scrollWidth": 390,
+            "clientWidth": 390,
+            "clientHeight": 844,
+            "documentHeight": 1901,
+            "horizontalOverflow": false,
+            "overflowOffenders": [],
+            "images": {
+              "total": 2,
+              "missing": [],
+              "pending": []
+            },
+            "fonts": {
+              "status": "loaded",
+              "loaded": [
+                "Baloo 2 700",
+                "Baloo 2 800",
+                "Caveat 600",
+                "Caveat 700",
+                "Nunito 500",
+                "Nunito 700",
+                "Nunito 800"
+              ]
+            },
+            "reducedMotion": true
+          },
+          "textState": {
+            "opLine": null,
+            "rvLine": null
+          }
+        }
+      }
+    },
+    "5-gallery": {
+      "source": "mockups/sections/5-gallery.html",
+      "views": {
+        "desktop": {
+          "viewport": "1440x900",
+          "dpr": 1,
+          "shots": {
+            "desktop": {
+              "file": "mockups/previews/5-gallery-desktop.png",
+              "bytes": 150276,
+              "ok": true
+            },
+            "fullpage": {
+              "file": "mockups/previews/5-gallery-fullpage.png",
+              "bytes": 214339,
+              "ok": true,
+              "clip": {
+                "x": 0,
+                "y": 0,
+                "width": 1440,
+                "height": 1191,
+                "scale": 1
+              }
+            }
+          },
+          "console": [],
+          "exceptions": [],
+          "failedRequests": [],
+          "errors": [],
+          "fontsReady": "ready",
+          "metrics": {
+            "title": "Little Moments — Allyssa's Critterpedia (mockup)",
+            "scrollWidth": 1440,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "documentHeight": 1191,
+            "horizontalOverflow": false,
+            "overflowOffenders": [],
+            "images": {
+              "total": 0,
+              "missing": [],
+              "pending": []
+            },
+            "fonts": {
+              "status": "loaded",
+              "loaded": [
+                "Baloo 2 800",
+                "Caveat 600",
+                "Nunito 500",
+                "Nunito 800"
+              ]
+            },
+            "reducedMotion": true
+          },
+          "textState": {
+            "opLine": null,
+            "rvLine": null
+          },
+          "fullpageTruncated": false,
+          "beats": []
+        },
+        "mobile": {
+          "viewport": "390x844",
+          "dpr": 1,
+          "shots": {
+            "mobile": {
+              "file": "mockups/previews/5-gallery-mobile.png",
+              "bytes": 65966,
+              "ok": true
+            }
+          },
+          "console": [],
+          "exceptions": [],
+          "failedRequests": [],
+          "errors": [],
+          "fontsReady": "ready",
+          "metrics": {
+            "title": "Little Moments — Allyssa's Critterpedia (mockup)",
+            "scrollWidth": 390,
+            "clientWidth": 390,
+            "clientHeight": 844,
+            "documentHeight": 2736,
+            "horizontalOverflow": false,
+            "overflowOffenders": [],
+            "images": {
+              "total": 0,
+              "missing": [],
+              "pending": []
+            },
+            "fonts": {
+              "status": "loaded",
+              "loaded": [
+                "Baloo 2 800",
+                "Caveat 600",
+                "Nunito 500",
+                "Nunito 800"
+              ]
+            },
+            "reducedMotion": true
+          },
+          "textState": {
+            "opLine": null,
+            "rvLine": null
+          }
+        }
+      }
+    },
+    "6-reveal": {
+      "source": "mockups/sections/6-reveal.html",
+      "views": {
+        "desktop": {
+          "viewport": "1440x900",
+          "dpr": 1,
+          "shots": {
+            "desktop": {
+              "file": "mockups/previews/6-reveal-desktop.png",
+              "bytes": 235047,
+              "ok": true
+            },
+            "fullpage": {
+              "file": "mockups/previews/6-reveal-fullpage.png",
+              "bytes": 1789681,
+              "ok": true,
+              "clip": {
+                "x": 0,
+                "y": 0,
+                "width": 1440,
+                "height": 4500,
+                "scale": 1
+              }
+            },
+            "beat1": {
+              "file": "mockups/previews/6-reveal-beat1.png",
+              "bytes": 235047,
+              "ok": true,
+              "clip": {
+                "x": 0,
+                "y": 0,
+                "width": 1440,
+                "height": 900,
+                "scale": 1
+              }
+            },
+            "beat2": {
+              "file": "mockups/previews/6-reveal-beat2.png",
+              "bytes": 287768,
+              "ok": true,
+              "clip": {
+                "x": 0,
+                "y": 900,
+                "width": 1440,
+                "height": 900,
+                "scale": 1
+              }
+            },
+            "beat3": {
+              "file": "mockups/previews/6-reveal-beat3.png",
+              "bytes": 482413,
+              "ok": true,
+              "clip": {
+                "x": 0,
+                "y": 1800,
+                "width": 1440,
+                "height": 900,
+                "scale": 1
+              }
+            },
+            "beat4": {
+              "file": "mockups/previews/6-reveal-beat4.png",
+              "bytes": 172875,
+              "ok": true,
+              "clip": {
+                "x": 0,
+                "y": 2700,
+                "width": 1440,
+                "height": 900,
+                "scale": 1
+              }
+            },
+            "beat5": {
+              "file": "mockups/previews/6-reveal-beat5.png",
+              "bytes": 608774,
+              "ok": true,
+              "clip": {
+                "x": 0,
+                "y": 3600,
+                "width": 1440,
+                "height": 900,
+                "scale": 1
+              }
+            }
+          },
+          "console": [],
+          "exceptions": [],
+          "failedRequests": [],
+          "errors": [],
+          "fontsReady": "ready",
+          "metrics": {
+            "title": "Allyssa's Island — The Reveal (Mockup 06)",
+            "scrollWidth": 1440,
+            "clientWidth": 1440,
+            "clientHeight": 900,
+            "documentHeight": 4500,
+            "horizontalOverflow": false,
+            "overflowOffenders": [],
+            "images": {
+              "total": 4,
+              "missing": [],
+              "pending": []
+            },
+            "fonts": {
+              "status": "loaded",
+              "loaded": [
+                "Baloo 2 600",
+                "Baloo 2 700",
+                "Baloo 2 800",
+                "Caveat 400",
+                "Caveat 600",
+                "Nunito 400",
+                "Nunito 700",
+                "Nunito 800"
+              ]
+            },
+            "reducedMotion": true
+          },
+          "textState": {
+            "opLine": null,
+            "rvLine": "Allyssa is moving up!"
+          },
+          "fullpageTruncated": false,
+          "beats": [
+            {
+              "n": 1,
+              "label": "BEAT 1 — FAKE-OUT",
+              "y": 0,
+              "height": 900
+            },
+            {
+              "n": 2,
+              "label": "BEAT 2 — THE ANNOUNCEMENT",
+              "y": 900,
+              "height": 900
+            },
+            {
+              "n": 3,
+              "label": "BEAT 3 — THE ACHIEVEMENT",
+              "y": 1800,
+              "height": 900
+            },
+            {
+              "n": 4,
+              "label": "BEAT 4 — THE LETTER",
+              "y": 2700,
+              "height": 900
+            },
+            {
+              "n": 5,
+              "label": "FINALE — CELEBRATION",
+              "y": 3600,
+              "height": 900
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": "390x844",
+          "dpr": 1,
+          "shots": {
+            "mobile": {
+              "file": "mockups/previews/6-reveal-mobile.png",
+              "bytes": 115410,
+              "ok": true
+            }
+          },
+          "console": [],
+          "exceptions": [],
+          "failedRequests": [],
+          "errors": [],
+          "fontsReady": "ready",
+          "metrics": {
+            "title": "Allyssa's Island — The Reveal (Mockup 06)",
+            "scrollWidth": 390,
+            "clientWidth": 390,
+            "clientHeight": 844,
+            "documentHeight": 4125,
+            "horizontalOverflow": false,
+            "overflowOffenders": [],
+            "images": {
+              "total": 4,
+              "missing": [],
+              "pending": []
+            },
+            "fonts": {
+              "status": "loaded",
+              "loaded": [
+                "Baloo 2 600",
+                "Baloo 2 700",
+                "Baloo 2 800",
+                "Caveat 400",
+                "Caveat 600",
+                "Nunito 400",
+                "Nunito 600",
+                "Nunito 700",
+                "Nunito 800"
+              ]
+            },
+            "reducedMotion": true
+          },
+          "textState": {
+            "opLine": null,
+            "rvLine": "Allyssa is moving up!"
+          }
+        }
+      }
+    }
+  },
+  "summary": {
+    "ok": true,
+    "failedShots": [],
+    "issues": []
+  },
+  "chromeVersion": "Chrome/153.0.8010.53"
+}

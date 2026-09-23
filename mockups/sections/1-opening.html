@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allyssa's Island — Morning Announcement (Mockup 01)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700;800&family=Caveat:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../assets/tokens.css">
+<link rel="stylesheet" href="../../assets/base.css">
+<script src="../../assets/config.js"></script>
+<script src="../../assets/audio.js"></script>
+<style>
+  /* ---------- Section 1: opening — layout only ---------- */
+  html, body { height: 100%; }
+  body { background: var(--ac-wood); overflow: hidden; }
+
+  .op-scene {
+    position: fixed; inset: 0;
+    overflow: hidden;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* A 16:9 "stage" that behaves exactly like the background's
+     xMidYMid slice, so everything placed in % stays glued to the art. */
+  .op-stage {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: max(100vw, calc(100vh * 16 / 9));
+    aspect-ratio: 1600 / 900;
+    transform: translate(-50%, -50%);
+  }
+  .op-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+  /* Allyssa: viewBox 0 0 360 420, bottom edge = desk line (y≈576 of 900). */
+  .op-allyssa {
+    position: absolute;
+    left: 50%; bottom: 36%;
+    width: 20.625%;               /* 330px on the 1600-wide stage */
+    transform: translateX(-50%);
+  }
+  .op-allyssa img {
+    width: 100%; height: auto;
+    transform-origin: 50% 100%;
+    filter: drop-shadow(0 10px 8px color-mix(in srgb, var(--ac-wood-deep) 28%, transparent));
+    animation: op-breathe 3s var(--ease-soft) infinite;
+  }
+  @keyframes op-breathe {
+    0%, 100% { transform: scale(1, 1); }
+    50%      { transform: scale(1.008, 1.022) translateY(-1px); }
+  }
+  /* soft contact shadow on the desk surface */
+  .op-contact {
+    position: absolute;
+    left: 50%; bottom: 34.6%;
+    width: 17%; height: 3.2%;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--ac-wood-deep) 32%, transparent), transparent);
+  }
+
+  /* emote bubble for the last line */
+  .op-emote {
+    position: absolute;
+    left: 58.5%; bottom: 79%;
+    width: 4.2%;
+    aspect-ratio: 1;
+    display: grid; place-items: center;
+    background: var(--ac-white);
+    border-radius: 50%;
+    box-shadow: var(--sh-2);
+    font-family: var(--ac-font-ui); font-weight: 800;
+    color: var(--ac-pink-deep);
+    font-size: clamp(1.1rem, 2.2vw, 2rem);
+    line-height: 1;
+    opacity: 0; visibility: hidden;
+  }
+  .op-emote.is-on { opacity: 1; visibility: visible; }
+  .op-emote::after {
+    content: ''; position: absolute; left: 12%; bottom: -8%;
+    width: 30%; height: 30%;
+    background: var(--ac-white);
+    clip-path: polygon(0 100%, 30% 0, 100% 30%);
+  }
+
+  /* desk props */
+  .op-mic  { position: absolute; left: 40.6%; bottom: 31.6%; width: 4.4%; }
+  .op-tea  { position: absolute; left: 56.9%; bottom: 32.2%; width: 3.9%; }
+  .op-mic svg, .op-tea svg { width: 100%; height: auto; overflow: visible; }
+  .op-prop-shadow { fill: var(--ac-wood-deep); opacity: .22; }
+
+  .mic-base  { fill: var(--ac-ink-strong); }
+  .mic-base2 { fill: var(--ac-ink); }
+  .mic-pole  { fill: none; stroke: var(--ac-ink-strong); stroke-width: 5; stroke-linecap: round; }
+  .mic-head  { fill: var(--ac-ink-strong); }
+  .mic-grill { fill: none; stroke: var(--ac-ink-soft); stroke-width: 1.6; opacity: .7; }
+  .mic-shine { fill: var(--ac-white); opacity: .35; }
+  .mic-band  { fill: var(--ac-gold); }
+
+  .tea-coaster { fill: var(--ac-cream-deep); }
+  .tea-coaster2 { fill: var(--ac-cream-edge); }
+  .tea-liquid { fill: var(--ac-wood-light); }
+  .tea-liquid-top { fill: var(--ac-gold); opacity: .75; }
+  .tea-glass { fill: var(--ac-sky-light); opacity: .38; stroke: var(--ac-white); stroke-width: 2.2; }
+  .tea-ice   { fill: var(--ac-white); opacity: .55; }
+  .tea-shine { fill: var(--ac-white); opacity: .7; }
+  .tea-straw { fill: var(--ac-pink); }
+  .tea-stripe { fill: var(--ac-white); }
+  .tea-lemon { fill: var(--ac-ticket); stroke: var(--ac-gold); stroke-width: 2; }
+  .tea-lemon-seg { fill: none; stroke: var(--ac-cream); stroke-width: 1.4; }
+  .tea-leaf { fill: var(--ac-leaf); }
+
+  /* ---------- HUD / UI layer (viewport-based) ---------- */
+  .op-ui {
+    position: absolute; inset: 0;
+    z-index: var(--z-ui);
+    pointer-events: none;
+  }
+  .op-dialog {
+    position: absolute;
+    left: 50%; bottom: 40px;
+    width: min(62vw, 900px);
+    transform: translateX(-50%);
+  }
+  .op-stats {
+    display: flex; gap: var(--sp-3); flex-wrap: wrap;
+    justify-content: flex-end;
+    margin: 0 var(--sp-5) var(--sp-5) 0;
+    padding: 0; list-style: none;
+  }
+  .op-stats .ac-tag {
+    font-size: clamp(.72rem, 1vw, .9rem);
+    box-shadow: 0 3px 0 color-mix(in srgb, var(--ac-ink) 22%, transparent);
+  }
+  .op-stats .ac-tag:nth-child(1) { transform: rotate(-2deg); }
+  .op-stats .ac-tag:nth-child(3) { transform: rotate(1.6deg); }
+  .op-stats b { font-weight: 800; }
+
+  .op-box {
+    pointer-events: auto;
+    min-height: calc(2 * 1.42em + clamp(46px, 7vw, 76px));
+  }
+  .op-line { display: block; min-height: 2.84em; }
+  .op-line .ac-hl { font-weight: 800; }
+
+  .op-hint {
+    position: absolute;
+    left: 50%; bottom: -40px;
+    transform: translateX(-50%);
+    font-family: var(--ac-font-ui); font-weight: 700;
+    font-size: var(--ac-fs-small);
+    color: var(--ac-cream);
+    text-shadow: 0 2px 2px color-mix(in srgb, var(--ac-wood-deep) 55%, transparent);
+    white-space: nowrap;
+    opacity: 0; visibility: hidden;
+    transition: opacity var(--t-slow) var(--ease-soft);
+  }
+  .op-hint span { display: inline-block; animation: op-nudge 1.6s var(--ease-soft) infinite; }
+  @keyframes op-nudge { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+  .is-done .op-hint { opacity: .92; visibility: visible; }
+  .is-done .ac-next, .op-box:not(.is-ready) .ac-next { visibility: hidden; }
+
+  .op-prompt {
+    position: absolute; right: 28px; bottom: 44px;
+    pointer-events: auto;
+    background: color-mix(in srgb, var(--ac-cream) 88%, transparent);
+    border: 0; border-radius: var(--r-pill);
+    padding: .38em .95em .38em .42em;
+    box-shadow: var(--sh-1);
+    cursor: pointer;
+    font-size: clamp(.85rem, 1.2vw, 1.02rem);
+    transition: transform var(--t-fast) var(--ease-bounce);
+  }
+  .op-prompt:hover { transform: translateY(-2px) scale(1.04); }
+  .is-done .op-prompt { opacity: 0; visibility: hidden; }
+
+  .op-slide {
+    position: absolute; left: 26px; top: 20px;
+    font-family: var(--ac-font-ui); font-weight: 800;
+    font-size: .95rem; letter-spacing: .14em;
+    color: var(--ac-cream);
+    opacity: .55;
+    text-shadow: 0 1px 2px color-mix(in srgb, var(--ac-wood-deep) 50%, transparent);
+  }
+  .op-slide small { font-weight: 600; opacity: .8; }
+
+  /* placeholders */
+  .ph {
+    text-decoration: underline dotted;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    cursor: help;
+    pointer-events: auto;
+  }
+  .op-legend {
+    position: fixed; right: 16px; top: 14px;
+    z-index: var(--z-overlay);
+    max-width: 250px;
+    background: color-mix(in srgb, var(--ac-paper) 90%, transparent);
+    color: var(--ac-ink);
+    border-radius: var(--r-md);
+    padding: 10px 14px 11px;
+    box-shadow: var(--sh-1);
+    font-family: var(--ac-font-body);
+    font-size: .74rem; line-height: 1.4;
+  }
+  .op-legend h2 { font-size: .8rem; margin-bottom: 4px; display: flex; gap: 6px; align-items: center; }
+  .op-legend .ac-leaf { width: .95em; height: .95em; }
+  .op-legend ul { margin: 0; padding-left: 1.1em; }
+
+  .op-badge {
+    position: fixed; right: 10px; bottom: 8px;
+    z-index: var(--z-modal);
+    pointer-events: none;
+    font: 700 10px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing: .12em;
+    color: var(--ac-white);
+    background: color-mix(in srgb, var(--ac-ink-strong) 55%, transparent);
+    padding: 4px 7px;
+    border-radius: 5px;
+    opacity: .7;
+  }
+
+  :focus-visible {
+    outline: 4px solid var(--ac-nook-blue);
+    outline-offset: 4px;
+    border-radius: var(--r-md);
+  }
+  .op-box:focus-visible { border-radius: var(--r-xl); }
+
+  /* petal placement */
+  .op-scene .ac-petal { z-index: 2; }
+
+  /* ---------- narrow screens ---------- */
+  @media (max-width: 760px) {
+    .op-dialog { width: calc(100vw - 28px); bottom: 64px; }
+    .op-stats { justify-content: center; margin: 0 0 var(--sp-4); gap: var(--sp-2); }
+    .op-prompt { right: 12px; bottom: 14px; }
+    .op-legend { left: 12px; right: auto; top: auto; bottom: 14px; max-width: 58vw; font-size: .66rem; padding: 7px 10px; }
+    .op-legend ul { display: none; }
+    .op-legend h2 { margin: 0; }
+    .op-slide { left: 14px; top: 12px; }
+    .op-emote { width: 9%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .op-allyssa img, .ac-petal, .ac-next, .op-hint span, .ac-pop { animation: none !important; }
+    .op-prompt:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+<main class="op-scene" id="opening" aria-labelledby="op-title">
+  <h1 id="op-title" class="ac-sr">Morning announcement from Allyssa's island</h1>
+
+  <div class="op-stage">
+    <img class="op-bg" src="../../assets/office-bg.svg" alt="A cozy wood-panelled island office with a sunny window, corkboard, roses and a wide wooden desk.">
+    <div class="op-contact" aria-hidden="true"></div>
+    <div class="op-allyssa">
+      <img src="../../assets/allyssa-desk.svg" alt="Allyssa, smiling with her eyes closed happily, seated behind the desk like an island announcer.">
+    </div>
+    <div class="op-emote" id="op-emote" aria-hidden="true">!</div>
+
+    <!-- desk microphone -->
+    <div class="op-mic">
+      <svg viewBox="0 0 70 140" role="img" aria-label="A small desk microphone on a stand">
+        <ellipse class="op-prop-shadow" cx="30" cy="134" rx="30" ry="6"/>
+        <ellipse class="mic-base" cx="30" cy="128" rx="26" ry="9"/>
+        <ellipse class="mic-base2" cx="30" cy="124" rx="22" ry="6.5"/>
+        <path class="mic-pole" d="M30 124 V76 Q30 54 44 42"/>
+        <rect class="mic-band" x="25" y="92" width="10" height="7" rx="3"/>
+        <g transform="rotate(38 52 28)">
+          <rect class="mic-head" x="40" y="4" width="24" height="42" rx="12"/>
+          <path class="mic-grill" d="M42 14h20M41 20h22M41 26h22M42 32h20"/>
+          <rect class="mic-shine" x="45" y="8" width="5" height="18" rx="2.5"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- iced tea -->
+    <div class="op-tea">
+      <svg viewBox="0 0 62 130" role="img" aria-label="A tall glass of iced tea with a pink striped straw and a lemon slice">
+        <ellipse class="tea-coaster2" cx="31" cy="124" rx="30" ry="6.5"/>
+        <ellipse class="tea-coaster" cx="31" cy="121" rx="28" ry="5.5"/>
+        <!-- straw -->
+        <g transform="rotate(14 40 40)">
+          <rect class="tea-straw" x="36" y="-4" width="7" height="92" rx="3.5"/>
+          <rect class="tea-stripe" x="36" y="4" width="7" height="4"/>
+          <rect class="tea-stripe" x="36" y="16" width="7" height="4"/>
+          <rect class="tea-stripe" x="36" y="28" width="7" height="4"/>
+        </g>
+        <path class="tea-liquid" d="M11 52 H51 L47 114 Q31 121 15 114 Z"/>
+        <ellipse class="tea-liquid-top" cx="31" cy="52" rx="20" ry="4"/>
+        <rect class="tea-ice" x="15" y="56" width="13" height="13" rx="3" transform="rotate(-12 21 62)"/>
+        <rect class="tea-ice" x="31" y="62" width="12" height="12" rx="3" transform="rotate(16 37 68)"/>
+        <rect class="tea-ice" x="20" y="76" width="11" height="11" rx="3" transform="rotate(8 25 81)"/>
+        <path class="tea-glass" d="M8 30 H54 L48 115 Q31 123 14 115 Z"/>
+        <rect class="tea-shine" x="13" y="38" width="4" height="58" rx="2" transform="rotate(-4 15 67)"/>
+        <!-- lemon on the rim -->
+        <circle class="tea-lemon" cx="12" cy="31" r="10"/>
+        <path class="tea-lemon-seg" d="M12 31 L12 23 M12 31 L19 27 M12 31 L19 35 M12 31 L12 39 M12 31 L5 35 M12 31 L5 27"/>
+        <ellipse class="tea-leaf" cx="24" cy="27" rx="6" ry="3" transform="rotate(-30 24 27)"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- ambient petals -->
+  <div class="ac-petals" aria-hidden="true">
+    <span class="ac-petal" style="left:31%; top:18%; animation-delay:-1s"></span>
+    <span class="ac-petal" style="left:63%; top:14%; animation-delay:-3s; width:14px; height:14px"></span>
+    <span class="ac-petal" style="left:36%; top:44%; animation-delay:-5s; width:12px; height:12px"></span>
+    <span class="ac-petal" style="left:66%; top:37%; animation-delay:-2s"></span>
+    <span class="ac-petal" style="left:12%; top:30%; animation-delay:-6s; width:13px; height:13px"></span>
+    <span class="ac-petal" style="left:86%; top:52%; animation-delay:-4s; width:15px; height:15px"></span>
+    <span class="ac-petal" style="left:22%; top:58%; animation-delay:-7s; width:11px; height:11px"></span>
+    <span class="ac-petal" style="left:48%; top:8%;  animation-delay:-8s; width:12px; height:12px"></span>
+    <span class="ac-petal" style="left:77%; top:22%; animation-delay:-2.5s; width:10px; height:10px"></span>
+  </div>
+
+  <!-- UI layer -->
+  <div class="op-ui" id="op-ui">
+    <p class="op-slide" aria-label="Section 1 of 5">01 <small>/ 05</small></p>
+
+    <section class="op-dialog" aria-label="Announcement">
+      <div class="ac-box op-box ac-pop" id="op-box" tabindex="0" role="button"
+           aria-label="Dialogue. Press Enter or Space to continue." aria-describedby="op-live">
+        <span class="ac-namechip">Allyssa</span>
+        <span class="op-line" id="op-line" aria-hidden="true"></span>
+        <span class="ac-next" aria-hidden="true"></span>
+        <span class="op-hint" aria-hidden="true"><span>↓</span> keep going</span>
+      </div>
+      <p class="ac-sr" id="op-live" aria-live="polite"></p>
+    </section>
+
+    <button class="ac-btn op-prompt" id="op-next" type="button">
+      <span class="ac-key ac-key--a" aria-hidden="true">A</span> Next
+    </button>
+  </div>
+</main>
+
+<div class="op-badge" aria-hidden="true">DATA: MOCKUP</div>
+
+<script>
+(function () {
+  'use strict';
+  var C = window.AC_CONFIG || {};
+  var VENUE = C.venue || "Thuy and Melissa's house";
+  var SON = C.son || 'Keone';
+
+  function snd(name) {
+    try { if (window.ACSound && ACSound[name]) ACSound[name](); } catch (e) {}
+  }
+  var audioReady = false;
+  function wakeAudio() {
+    if (audioReady) return;
+    audioReady = true;
+    try { if (window.ACSound && ACSound.init) ACSound.init(); } catch (e) {}
+  }
+
+  function ordinal(n) {
+    var v = n % 100;
+    if (v >= 11 && v <= 13) return n + 'th';
+    return n + ({1: 'st', 2: 'nd', 3: 'rd'}[n % 10] || 'th');
+  }
+  function liveStamp() {
+    var d = new Date();
+    var h = d.getHours(), m = d.getMinutes();
+    var time = ((h % 12) || 12) + ':' + (m < 10 ? '0' : '') + m + ' ' + (h < 12 ? 'AM' : 'PM');
+    var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    return { time: time, weekday: days[d.getDay()], monthDay: months[d.getMonth()] + ' ' + ordinal(d.getDate()) };
+  }
+
+  // Each line is built lazily so the opening date and time stay live.
+  var LINES = [
+    function () {
+      var s = liveStamp();
+      return [["Right now at "], [VENUE, 'ac-hl'], [", it's " + s.time + " on " + s.weekday + ", " + s.monthDay + "."]];
+    },
+    function () { return [["Hi, I'm "], [C.name || 'Allyssa', 'ac-hl'], ["."]]; },
+    function () { return [["I'm "], [SON, 'ac-hl'], ["'s mom."]]; },
+    function () { return [["Welcome — here's a little look at our story."]]; },
+    function () { return [["Let's get started!"]]; }
+  ];
+
+  var ui = document.getElementById('op-ui');
+  var box = document.getElementById('op-box');
+  var lineEl = document.getElementById('op-line');
+  var live = document.getElementById('op-live');
+  var emote = document.getElementById('op-emote');
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var idx = -1, timer = null, typing = false, segs = [], nodes = [], si = 0, ci = 0;
+
+  function render(parts) {
+    lineEl.textContent = '';
+    nodes = parts.map(function (p) {
+      var el = document.createElement('span');
+      if (p[1]) el.className = p[1];
+      lineEl.appendChild(el);
+      return el;
+    });
+  }
+  function finishLine() {
+    clearTimeout(timer);
+    for (var i = 0; i < segs.length; i++) nodes[i].textContent = segs[i][0];
+    typing = false;
+    lineEl.classList.remove('ac-caret');
+    box.classList.add('is-ready');
+    snd('confirm');
+    if (idx === LINES.length - 1) {
+      ui.classList.add('is-done');
+      emote.classList.add('is-on');
+      if (!reduce) { emote.classList.remove('ac-pop'); void emote.offsetWidth; emote.classList.add('ac-pop'); }
+    }
+  }
+  function tick() {
+    if (si >= segs.length) return finishLine();
+    var text = segs[si][0];
+    ci++;
+    nodes[si].textContent = text.slice(0, ci);
+    var ch = text.charAt(ci - 1);
+    if (ch && ch !== ' ') snd('blip');
+    if (ci >= text.length) { si++; ci = 0; }
+    var delay = /[.,!?—]/.test(ch) ? 140 : 32;
+    timer = setTimeout(tick, delay);
+  }
+  function startLine(n) {
+    idx = n;
+    segs = LINES[n]();
+    live.textContent = segs.map(function (s) { return s[0]; }).join('');
+    render(segs);
+    box.classList.remove('is-ready');
+    si = 0; ci = 0; typing = true;
+    lineEl.classList.add('ac-caret');
+    if (reduce) { finishLine(); return; }
+    timer = setTimeout(tick, 260);
+  }
+  function advance() {
+    wakeAudio();
+    if (typing) { finishLine(); return; }
+    if (idx >= LINES.length - 1) return;
+    snd('select');
+    startLine(idx + 1);
+  }
+
+  document.getElementById('opening').addEventListener('click', function (e) {
+    if (e.target.closest('.ph')) return;
+    advance();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== ' ' && e.key !== 'Enter') return;
+    if (e.target && e.target.tagName === 'BUTTON') return; // native click handles it
+    e.preventDefault();
+    advance();
+  });
+
+  startLine(0);
+})();
+</script>
+</body>
+</html>

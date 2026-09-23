@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Allyssa's Island</title>
+<meta name="description" content="A little island tour of life as a stay-at-home mom — and some news at the end.">
+<meta name="color-scheme" content="light">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700;800&family=Caveat:wght@400;600&display=swap">
+
+<link rel="icon" href="assets/leaf.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/base.css">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main" data-content="ui.skipLink" data-hide-empty>Skip to content</a>
+
+<!-- ============ "Press A" start gate ============
+     ACNH opens with a title screen, and browsers block audio until a
+     user gesture — so this gate is both authentic and required. -->
+<div class="start-gate" id="start-gate">
+  <img class="start-gate__leaf ac-spin" src="assets/leaf.svg" alt="" aria-hidden="true" width="96" height="96">
+  <p class="start-gate__title" data-content="site.title" data-hide-empty>Allyssa's Island</p>
+  <p class="start-gate__tagline" data-content="site.tagline" data-hide-empty></p>
+  <button class="start-gate__button" type="button">
+    <span class="ac-key ac-key--a" aria-hidden="true">A</span>
+    <span data-content="ui.startPrompt">Press A to start</span>
+  </button>
+  <p class="start-gate__hint" data-content="ui.startHint"></p>
+</div>
+
+<!-- ============ presentation controls ============ -->
+<div class="site-controls" hidden>
+  <p class="section-progress" aria-label="Scene"><span>01</span> / 05</p>
+  <button class="sound-toggle" type="button" aria-pressed="false">
+    <span class="ac-key ac-key--y" aria-hidden="true">Y</span>
+    <span class="sound-toggle__label" data-content="ui.soundOff">Sound off</span>
+  </button>
+  <a class="edit-link" data-edit-link hidden></a>
+</div>
+
+<main id="main">
+
+  <!-- ---------- 01 · opening ---------- -->
+  <section class="scene scene--opening" id="opening" aria-labelledby="opening-title">
+    <h2 class="ac-sr" id="opening-title">Morning announcement</h2>
+  </section>
+
+  <!-- ---------- 02 · daily life ---------- -->
+  <section class="scene scene--daily" id="daily" aria-labelledby="daily-title">
+    <h2 class="ac-sr" id="daily-title" data-content="dailyLife.title" data-hide-empty>A Day in the Life</h2>
+  </section>
+
+  <!-- ---------- 03 · stats ---------- -->
+  <section class="scene scene--stats" id="stats" aria-labelledby="stats-title">
+    <h2 class="ac-sr" id="stats-title" data-content="stats.title" data-hide-empty>Resident Stats</h2>
+  </section>
+
+  <!-- ---------- 04 · gallery ---------- -->
+  <section class="scene scene--gallery" id="gallery" aria-labelledby="gallery-title">
+    <h2 class="ac-sr" id="gallery-title" data-content="gallery.title" data-hide-empty>Little Moments</h2>
+  </section>
+
+  <!-- ---------- 05 · reveal ---------- -->
+  <section class="scene scene--reveal" id="reveal" aria-labelledby="reveal-title">
+    <h2 class="ac-sr" id="reveal-title">Some news</h2>
+  </section>
+
+  <p class="content-status" id="content-status" role="status" aria-live="polite"></p>
+</main>
+
+<script src="assets/content.js"></script>
+<script src="assets/sections.js"></script>
+<script src="assets/audio.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

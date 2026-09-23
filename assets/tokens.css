@@ -1,0 +1,99 @@
+/* ============================================================
+   Allyssa Portfolio — Animal Crossing design tokens
+   Single source of truth for color, type, space, motion.
+   OWNER: orchestrator. Workers must NOT edit this file.
+   ============================================================ */
+
+:root {
+  /* --- Core ACNH UI surfaces ------------------------------- */
+  --ac-cream:        #FBF6E0;  /* dialogue box / cards        */
+  --ac-cream-deep:   #F2E8C9;  /* card alt / inset            */
+  --ac-cream-edge:   #E4D7AE;  /* hairline + inner shadow     */
+  --ac-paper:        #FFFDF4;  /* letter paper                */
+
+  /* --- Ink ------------------------------------------------- */
+  --ac-ink:          #7B5B43;  /* primary warm brown text     */
+  --ac-ink-strong:   #4A3423;  /* headings                    */
+  --ac-ink-soft:     #A98F76;  /* secondary / captions        */
+  --ac-white:        #FFFFFF;
+
+  /* --- Signature accents ----------------------------------- */
+  --ac-chip:         #EAE6A0;  /* nametag pill (yellow-green) */
+  --ac-pink:         #F2A0B6;  /* highlighted words           */
+  --ac-pink-deep:    #E0536B;  /* roses / alert               */
+  --ac-leaf:         #7EC850;  /* the ACNH leaf green         */
+  --ac-leaf-deep:    #4E9C2E;
+  --ac-leaf-light:   #A8DD7C;
+
+  /* --- Environment ----------------------------------------- */
+  --ac-sky:          #8ED4F0;
+  --ac-sky-light:    #C6EAF8;
+  --ac-sky-deep:     #5FB4D8;
+  --ac-grass:        #8FCB57;
+  --ac-grass-deep:   #6BA83C;
+  --ac-sand:         #F0DCA8;
+  --ac-water:        #5CC4E0;
+
+  /* --- Wood (Resident Services interior) ------------------- */
+  --ac-wood-light:   #D9A96C;
+  --ac-wood:         #B98A5A;
+  --ac-wood-mid:     #9A6E42;
+  --ac-wood-dark:    #8A6136;
+  --ac-wood-deep:    #5E4022;
+  --ac-floor:        #C99A63;
+  --ac-floor-light:  #E0B57E;
+  --ac-wall:         #F2E4C8;
+
+  /* --- Nook UI --------------------------------------------- */
+  --ac-nook-blue:    #3FA9DC;
+  --ac-ticket:       #F5D76E;
+  --ac-btn-a:        #7ED957;
+  --ac-btn-b:        #E8617A;
+  --ac-btn-x:        #5BC8E8;
+  --ac-btn-y:        #F5D76E;
+  --ac-gold:         #F0C24A;
+
+  /* --- Type ------------------------------------------------ */
+  /* ACNH uses "Fink Heavy"; Baloo 2 is the closest free match. */
+  --ac-font-ui:   'Baloo 2', 'Fink Heavy', 'Nunito', system-ui, -apple-system, sans-serif;
+  --ac-font-body: 'Nunito', system-ui, -apple-system, sans-serif;
+  --ac-font-hand: 'Caveat', 'Bradley Hand', cursive;  /* letters / handwriting */
+
+  --ac-fs-hero:  clamp(2.6rem, 6.2vw, 5.2rem);
+  --ac-fs-h1:    clamp(2rem, 4.4vw, 3.4rem);
+  --ac-fs-h2:    clamp(1.5rem, 3vw, 2.3rem);
+  --ac-fs-h3:    clamp(1.15rem, 2vw, 1.55rem);
+  --ac-fs-dialog: clamp(1.05rem, 2.35vw, 1.85rem);
+  --ac-fs-body:  clamp(0.98rem, 1.35vw, 1.12rem);
+  --ac-fs-small: 0.85rem;
+
+  /* --- Space ----------------------------------------------- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
+  --sp-9: 96px; --sp-10: 128px;
+
+  /* --- Radius (ACNH is very round) ------------------------- */
+  --r-sm: 10px; --r-md: 18px; --r-lg: 28px;
+  --r-xl: 44px; --r-pill: 999px;
+
+  /* --- Elevation ------------------------------------------- */
+  /* ACNH shadows are soft, warm, and never pure black. */
+  --sh-1: 0 2px 0 rgba(122,91,67,.14), 0 4px 10px rgba(122,91,67,.10);
+  --sh-2: 0 4px 0 rgba(122,91,67,.16), 0 10px 22px rgba(122,91,67,.14);
+  --sh-3: 0 8px 0 rgba(122,91,67,.16), 0 20px 40px rgba(122,91,67,.20);
+  --sh-inset: inset 0 3px 0 rgba(255,255,255,.85), inset 0 -3px 0 rgba(122,91,67,.06);
+
+  /* --- Motion (bouncy, playful, never linear) -------------- */
+  --ease-bounce: cubic-bezier(.34, 1.56, .64, 1);
+  --ease-soft:   cubic-bezier(.4, 0, .2, 1);
+  --t-fast: .18s; --t-mid: .34s; --t-slow: .6s;
+
+  /* --- Layout --------------------------------------------- */
+  --page-max: 1180px;
+  --z-scene: 1; --z-ui: 10; --z-overlay: 50; --z-modal: 100;
+}
+
+/* ACNH's ambient petal particles (see reference: floating flowers) */
+@media (prefers-reduced-motion: reduce) {
+  :root { --t-fast: .01ms; --t-mid: .01ms; --t-slow: .01ms; }
+}

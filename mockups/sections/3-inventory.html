@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tools of the Trade — Allyssa's Pockets (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat:wght@600;700&family=Nunito:wght@500;700;800&display=swap">
+<link rel="stylesheet" href="../../assets/tokens.css">
+<link rel="stylesheet" href="../../assets/base.css">
+<style>
+  /* ---- section-local styles only; primitives come from base.css ---- */
+  :root {
+    --inv-emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    --inv-shade: color-mix(in srgb, var(--ac-ink) 18%, transparent);
+  }
+
+  body { background: var(--ac-sand); }
+
+  .inv {
+    position: relative;
+    min-height: 100vh;
+    padding: var(--sp-7) 0 var(--sp-6);
+    overflow: hidden;
+    /* soft polka-dot "pocket lining" */
+    background:
+      radial-gradient(circle at 12px 12px, var(--ac-cream-deep) 5px, transparent 6px) 0 0 / 40px 40px,
+      var(--ac-sand);
+  }
+  .inv > .ac-wrap { position: relative; z-index: var(--z-ui); }
+
+  /* ---------- header ---------- */
+  .inv__head { margin-bottom: var(--sp-6); }
+  .inv__kicker {
+    font-family: var(--ac-font-hand);
+    font-size: 1.7rem;
+    color: var(--ac-ink-soft);
+    margin: 0 0 var(--sp-1);
+    transform: rotate(-2deg);
+    display: inline-block;
+  }
+  .inv__sub { margin: var(--sp-2) 0 0; max-width: 46ch; }
+
+  /* ---------- two-column stage ---------- */
+  .inv__stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+    gap: var(--sp-7);
+    align-items: start;
+  }
+
+  /* ---------- the pocket panel ---------- */
+  .pocket { padding: var(--sp-5) var(--sp-5) var(--sp-4); }
+  .pocket__bar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+  }
+  .pocket__title { font-size: var(--ac-fs-h3); display: flex; align-items: center; gap: var(--sp-2); }
+  .pocket__count {
+    font-family: var(--ac-font-ui); font-weight: 800;
+    color: var(--ac-ink-soft); font-size: var(--ac-fs-small);
+    white-space: nowrap;
+  }
+
+  .pocket__grid {
+    list-style: none; margin: 0; padding: var(--sp-4);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: clamp(8px, 1.2vw, 14px);
+    background: var(--ac-cream-deep);
+    border-radius: var(--r-lg);
+    box-shadow: inset 0 3px 0 var(--inv-shade);
+  }
+
+  .slot {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    display: grid; place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--ac-paper);
+    box-shadow: 0 3px 0 var(--ac-cream-edge);
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+    transition: transform var(--t-mid) var(--ease-bounce), box-shadow var(--t-fast) var(--ease-soft);
+  }
+  .slot__icon {
+    font-family: var(--inv-emoji);
+    font-size: clamp(1.5rem, 3.1vw, 2.55rem);
+    line-height: 1;
+    transition: transform var(--t-mid) var(--ease-bounce);
+  }
+  .slot:hover .slot__icon { transform: scale(1.12) rotate(-6deg); }
+  .slot[aria-pressed="true"] {
+    transform: translateY(-4px);
+    box-shadow: 0 0 0 4px var(--ac-gold), 0 7px 0 var(--ac-cream-edge);
+  }
+  .slot[aria-pressed="true"] .slot__icon { animation: inv-wiggle .6s var(--ease-bounce); }
+  /* the ACNH pointing-glove cursor on the selected slot */
+  .slot[aria-pressed="true"]::after {
+    content: '👆';
+    position: absolute;
+    right: -10%; bottom: -18%;
+    font-family: var(--inv-emoji);
+    font-size: clamp(1rem, 1.8vw, 1.5rem);
+    transform: rotate(-24deg);
+    animation: inv-point .9s var(--ease-soft) infinite;
+    pointer-events: none;
+  }
+  .slot--empty {
+    background: transparent;
+    box-shadow: inset 0 0 0 3px var(--ac-cream-edge);
+  }
+  .slot--gift { background: var(--ac-paper); }
+  .slot--gift .slot__icon { animation: inv-shiver 3.2s var(--ease-soft) infinite; }
+
+  .slot:focus-visible,
+  .pocket__grid button:focus-visible {
+    outline: 4px solid var(--ac-nook-blue);
+    outline-offset: 3px;
+  }
+
+  @keyframes inv-wiggle {
+    0% { transform: scale(.8) rotate(0); }
+    40% { transform: scale(1.18) rotate(-8deg); }
+    100% { transform: scale(1) rotate(0); }
+  }
+  @keyframes inv-point {
+    0%, 100% { transform: rotate(-24deg) translate(0, 0); }
+    50%      { transform: rotate(-24deg) translate(-3px, -4px); }
+  }
+  @keyframes inv-shiver {
+    0%, 86%, 100% { transform: rotate(0); }
+    89% { transform: rotate(-9deg); }
+    92% { transform: rotate(8deg); }
+    95% { transform: rotate(-5deg); }
+  }
+
+  .pocket__prompts {
+    display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-5);
+    margin-top: var(--sp-4);
+    padding-inline: var(--sp-2);
+  }
+  .pocket__prompts .ac-btn { color: var(--ac-ink); }
+  .ac-key--dpad { background: var(--ac-ink-soft); }
+
+  /* ---------- detail side ---------- */
+  .detail { display: grid; gap: var(--sp-6); }
+  .detail__top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--sp-4);
+    align-items: end;
+  }
+  .item-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--sp-4);
+    align-items: center;
+  }
+  .item-card__icon {
+    width: clamp(78px, 8vw, 116px);
+    aspect-ratio: 1;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--ac-cream-deep);
+    box-shadow: inset 0 3px 0 var(--inv-shade);
+    font-family: var(--inv-emoji);
+    font-size: clamp(2.4rem, 4.4vw, 3.8rem);
+    line-height: 1;
+  }
+  .item-card__name { font-size: var(--ac-fs-h3); margin: var(--sp-2) 0 var(--sp-1); overflow-wrap: anywhere; }
+  .item-card__price {
+    margin: 0;
+    font-family: var(--ac-font-ui); font-weight: 700;
+    font-size: var(--ac-fs-small);
+    color: var(--ac-ink-soft);
+  }
+  .item-card__price b { color: var(--ac-ink); }
+  .is-swap { animation: ac-pop .45s var(--ease-bounce) both; }
+
+  .detail__ally {
+    width: clamp(120px, 12vw, 170px);
+    height: auto;
+    margin-bottom: calc(-1 * var(--sp-2));
+    filter: drop-shadow(0 6px 0 var(--inv-shade));
+  }
+
+  .detail .ac-box { margin-top: var(--sp-3); min-height: 5.6em; }
+  .detail .ac-box p { margin: 0; }
+  .detail__hint {
+    margin: var(--sp-7) 0 0; /* clears the .ac-next bob arrow */
+    font-family: var(--ac-font-hand);
+    font-size: 1.45rem;
+    color: var(--ac-ink-soft);
+    text-align: center;
+  }
+
+  /* ---------- mockup badge ---------- */
+  .mock-badge {
+    position: fixed;
+    top: var(--sp-3); right: var(--sp-3);
+    z-index: var(--z-modal);
+    pointer-events: none;
+    font-family: var(--ac-font-ui); font-weight: 800;
+    font-size: .72rem; letter-spacing: .12em;
+    color: var(--ac-ink-soft);
+    background: var(--ac-paper);
+    border: 2px dashed var(--ac-cream-edge);
+    border-radius: var(--r-pill);
+    padding: .25em .9em;
+    opacity: .75;
+  }
+
+  .ph {
+    background: var(--ac-cream-deep);
+    border-bottom: 2px dotted var(--ac-ink-soft);
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 960px) {
+    .inv { padding-top: var(--sp-6); }
+    .inv__stage { grid-template-columns: minmax(0, 1fr); gap: var(--sp-6); }
+  }
+  @media (max-width: 480px) {
+    .pocket { padding: var(--sp-4) var(--sp-3) var(--sp-3); }
+    .pocket__grid { padding: var(--sp-3); }
+    .detail__top { grid-template-columns: minmax(0, 1fr); }
+    .detail__ally { display: none; }
+    .item-card__icon { width: 72px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slot, .slot__icon { transition: none; }
+    .slot:hover .slot__icon,
+    .slot[aria-pressed="true"] { transform: none; }
+    .slot[aria-pressed="true"] .slot__icon,
+    .slot[aria-pressed="true"]::after,
+    .slot--gift .slot__icon,
+    .is-swap,
+    .ac-petal, .ac-next, .ac-caret::after { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<span class="mock-badge" aria-hidden="true">DATA: MOCKUP</span>
+
+<main>
+  <section class="inv" aria-labelledby="inv-title">
+    <div class="ac-petals" aria-hidden="true">
+      <span class="ac-petal" style="left:4%;top:16%"></span>
+      <span class="ac-petal" style="left:47%;top:7%"></span>
+      <span class="ac-petal" style="left:93%;top:22%"></span>
+      <span class="ac-petal" style="left:88%;top:84%"></span>
+      <span class="ac-petal" style="left:2%;top:78%"></span>
+      <span class="ac-petal" style="left:55%;top:94%"></span>
+    </div>
+
+    <div class="ac-wrap">
+      <header class="inv__head">
+        <p class="inv__kicker">Section 3</p>
+        <h2 id="inv-title" class="ac-heading"><span class="ac-leaf" aria-hidden="true"></span>Tools of the Trade</h2>
+        <p class="inv__sub">Everything <span class="ac-hl">Allyssa</span> carries on an ordinary day. Pick an item to inspect it.</p>
+      </header>
+
+      <div class="inv__stage">
+        <!-- ============ POCKETS ============ -->
+        <div class="pocket ac-card">
+          <div class="pocket__bar">
+            <h3 class="pocket__title" id="pocket-title">Pockets</h3>
+            <span class="pocket__count" id="pocket-count"></span>
+          </div>
+
+          <ul class="pocket__grid" id="pocket-grid" aria-labelledby="pocket-title"></ul>
+
+          <div class="pocket__prompts" aria-hidden="true">
+            <span class="ac-btn"><span class="ac-key ac-key--a">A</span>Inspect</span>
+            <span class="ac-btn"><span class="ac-key ac-key--dpad">✥</span>Move</span>
+            <span class="ac-btn"><span class="ac-key ac-key--b">B</span>Put it all down <em>(not an option)</em></span>
+          </div>
+        </div>
+
+        <!-- ============ DETAIL ============ -->
+        <div class="detail">
+          <div class="detail__top">
+            <article class="item-card ac-card" id="item-card" aria-live="polite">
+              <div class="item-card__icon" id="item-icon" aria-hidden="true">☕</div>
+              <div>
+                <span class="ac-tag" id="item-tag">Consumable</span>
+                <h3 class="item-card__name" id="item-name">Reheated Coffee</h3>
+                <p class="item-card__price">Sell price: <b id="item-price">0 Bells</b></p>
+              </div>
+            </article>
+            <img class="detail__ally" src="../../assets/allyssa-stand.svg" width="360" height="560"
+                 alt="Allyssa as an island villager, smiling with her eyes closed">
+          </div>
+
+          <div class="ac-box" role="group" aria-label="Allyssa's thoughts on this item">
+            <span class="ac-namechip">Allyssa</span>
+            <p><span id="item-say-visual" class="ac-caret" aria-hidden="true"></span><span id="item-say" class="ac-sr"></span></p>
+            <span class="ac-next" aria-hidden="true"></span>
+          </div>
+
+          <p class="detail__hint" aria-hidden="true">psst… one of these is still wrapped.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="../../assets/config.js"></script>
+<script src="../../assets/audio.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var CFG = window.AC_CONFIG || {};
+  var NAME = CFG.name || 'Allyssa';
+  var SON = CFG.son || 'Keone';
+  var START = CFG.jobStartText || 'October 4th';
+
+  /* ---- Sound: always optional, never before a user gesture ---- */
+  var soundReady = false;
+  function sfx(kind) {
+    try {
+      var S = window.ACSound;
+      if (!S || !(CFG.audio && CFG.audio.enabled !== false)) return;
+      if (!soundReady && typeof S.init === 'function') { S.init(); soundReady = true; }
+      if (typeof S[kind] === 'function') S[kind]();
+    } catch (e) { /* silence is fine */ }
+  }
+
+  /* ---- The pockets. Generic mom gear; nothing here is a personal fact. ---- */
+  var ITEMS = [
+    { icon: '☕', name: 'Reheated Coffee', tag: 'Consumable', tone: '',
+      price: '0 Bells', say: 'Microwaved three times today. Will be finished… eventually. Probably.' },
+    { icon: '👜', name: 'Mom Bag', tag: 'Bag', tone: 'blue',
+      price: 'Priceless', say: 'Holds everything. Produces nothing on demand. A true mystery of the island.' },
+    { icon: '🍪', name: 'Snack Stash', tag: 'Diplomacy', tone: 'gold',
+      price: 'Not for sale', say: 'Emergency snacks for ' + SON + '. The currency of every peace treaty.' },
+    { icon: '🧻', name: 'Wet Wipes', tag: 'Tool', tone: '',
+      price: '12 Bells', say: 'Cleans hands, faces, car seats, and the occasional wall. No questions.' },
+    { icon: '🩹', name: 'Bandages', tag: 'Medicine', tone: 'pink',
+      price: '5 Bells', say: 'For boo-boos both real and theoretical. A kiss is applied at no extra charge.' },
+    { icon: '🧺', name: 'Laundry Basket', tag: 'Furniture', tone: 'blue',
+      price: '∞ Bells', say: 'Bottomless. Scientists are baffled. Folding is scheduled for “later.”' },
+    { icon: '🧸', name: 'Bedtime Bear', tag: 'Essential', tone: 'pink',
+      price: 'Do not sell', say: 'Must be located before bedtime. This is not a negotiation.' },
+    { icon: '📚', name: 'Picture Book', tag: 'Reading', tone: '',
+      price: '80 Bells', say: 'Read aloud so many times I can do it with my eyes closed. With voices.' },
+    { icon: '🔑', name: 'Car Keys', tag: 'Tool', tone: 'gold',
+      price: '40 Bells', say: 'Always in the last place I look. Which is, somehow, never the key hook.' },
+    { icon: '📱', name: 'Phone', tag: 'Gadget', tone: 'blue',
+      price: '3% battery', say: 'Storage full. Every single photo is of ' + SON + '. No regrets.' },
+    { icon: '🥤', name: 'Mystery Cup', tag: 'Found item', tone: '',
+      price: 'Do not ask', say: 'Found under the couch. Contents: unknown. Age: also unknown. Into the sink.' },
+    { icon: '🧼', name: 'Stain Remover', tag: 'Tool', tone: '',
+      price: '30 Bells', say: 'Works on everything except the one stain on my favorite shirt.' },
+    { icon: '⏰', name: 'Alarm Clock', tag: 'Gadget', tone: 'pink',
+      price: '60 Bells', say: 'Hasn’t gone off in ages. A smaller, louder alarm always wakes me first.' },
+    { icon: '🗓️', name: 'Family Planner', tag: 'Stationery', tone: 'gold',
+      price: '25 Bells', say: 'Nap time, snack time, park time. Color-coded with optimism.' },
+    { icon: '💖', name: 'Endless Patience', tag: 'Rare', tone: 'pink',
+      price: 'Not found in stores', say: 'Refills with one hug. Somehow, it never runs out.' },
+    { icon: '🎁', name: 'Wrapped Present', tag: '???', tone: 'gold', gift: true,
+      price: 'Absolutely not', say: 'Hmm, it’s wrapped. The tag says: “Do not open until ' + START + '.”' },
+    null, null, null, null
+  ];
+  var EMPTY = { icon: '', name: 'Empty Pocket', tag: 'Space', tone: '',
+    price: '—', say: 'An empty pocket! …It won’t stay that way for long.' };
+
+  var COLS = 5;
+  var grid = document.getElementById('pocket-grid');
+  var els = {
+    card: document.getElementById('item-card'),
+    icon: document.getElementById('item-icon'),
+    tag: document.getElementById('item-tag'),
+    name: document.getElementById('item-name'),
+    price: document.getElementById('item-price'),
+    vis: document.getElementById('item-say-visual'),
+    sr: document.getElementById('item-say')
+  };
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var buttons = [];
+  var current = -1;
+  var typer = null;
+
+  document.getElementById('pocket-count').textContent =
+    ITEMS.filter(Boolean).length + ' / ' + ITEMS.length + ' slots';
+
+  ITEMS.forEach(function (item, i) {
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    var data = item || EMPTY;
+    b.type = 'button';
+    b.className = 'slot' + (item ? '' : ' slot--empty') + (data.gift ? ' slot--gift' : '');
+    b.setAttribute('aria-pressed', 'false');
+    b.setAttribute('aria-label', data.name);
+    b.tabIndex = i === 0 ? 0 : -1;
+    if (item) {
+      var ic = document.createElement('span');
+      ic.className = 'slot__icon';
+      ic.setAttribute('aria-hidden', 'true');
+      ic.textContent = item.icon;
+      b.appendChild(ic);
+    }
+    b.addEventListener('click', function () { select(i, true); });
+    b.addEventListener('keydown', onKey);
+    li.appendChild(b);
+    grid.appendChild(li);
+    buttons.push(b);
+  });
+
+  function onKey(e) {
+    var i = buttons.indexOf(e.currentTarget);
+    var n = i;
+    switch (e.key) {
+      case 'ArrowRight': n = Math.min(buttons.length - 1, i + 1); break;
+      case 'ArrowLeft':  n = Math.max(0, i - 1); break;
+      case 'ArrowDown':  n = i + COLS < buttons.length ? i + COLS : i; break;
+      case 'ArrowUp':    n = i - COLS >= 0 ? i - COLS : i; break;
+      case 'Home':       n = 0; break;
+      case 'End':        n = buttons.length - 1; break;
+      default: return;
+    }
+    e.preventDefault();
+    if (n !== i) select(n, true, true);
+  }
+
+  function say(text, withSound) {
+    if (typer) { clearInterval(typer); typer = null; }
+    els.sr.textContent = text;
+    if (reduced) { els.vis.textContent = text; return; }
+    var k = 0;
+    els.vis.textContent = '';
+    typer = setInterval(function () {
+      k += 1;
+      els.vis.textContent = text.slice(0, k);
+      if (withSound && k % 3 === 0) sfx('blip');
+      if (k >= text.length) { clearInterval(typer); typer = null; }
+    }, 28);
+  }
+
+  function select(i, fromUser, moveFocus) {
+    if (i === current && fromUser) return;
+    var data = ITEMS[i] || EMPTY;
+    buttons.forEach(function (b, j) {
+      b.setAttribute('aria-pressed', j === i ? 'true' : 'false');
+      b.tabIndex = j === i ? 0 : -1;
+    });
+    if (moveFocus) buttons[i].focus();
+    current = i;
+
+    els.icon.textContent = data.icon || '∅';
+    els.tag.textContent = data.tag;
+    els.tag.className = 'ac-tag' + (data.tone ? ' ac-tag--' + data.tone : '');
+    els.name.textContent = data.name;
+    els.price.textContent = data.price;
+    if (!reduced) {
+      els.card.classList.remove('is-swap');
+      void els.card.offsetWidth; // restart the pop
+      els.card.classList.add('is-swap');
+    }
+    if (fromUser) sfx(data.gift ? 'confirm' : 'select');
+    say(data.say, fromUser);
+  }
+
+  select(0, false); // silent initial state — no sound before a gesture
+})();
+</script>
+</body>
+</html>

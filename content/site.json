@@ -1,0 +1,118 @@
+{
+  "site": {
+    "title": "Allyssa's Island",
+    "tagline": "",
+    "name": "Allyssa",
+    "son": "Keone",
+    "portrait": "assets/reference/allyssa-reference.jpg",
+    "portraitAlt": "Allyssa's character portrait",
+    "editUrl": ""
+  },
+  "ui": {
+    "startPrompt": "Press A to start",
+    "startHint": "Tap, click, or press Enter",
+    "skipLink": "Skip to content",
+    "next": "Next",
+    "keepGoing": "keep going",
+    "replay": "Play it again",
+    "soundOn": "Sound on",
+    "soundOff": "Sound off",
+    "editLink": "Edit content",
+    "emptyEntry": "Waiting to be filled in",
+    "emptyPhoto": "Photo coming soon",
+    "emptySection": "Nothing here yet — check back soon!"
+  },
+  "opening": {
+    "speaker": "{name}",
+    "venue": "Thuy and Melissa's house",
+    "announcement": "Right now at *{venue}*, it's {time} on {weekday}, {date}.",
+    "dialogue": [
+      "Hi, I'm *{name}*.",
+      "I'm *{son}*'s mom.",
+      "Welcome — here's a little look at our story.",
+      "Let's get started!"
+    ]
+  },
+  "dailyLife": {
+    "title": "A Day in the Life",
+    "subtitle": "",
+    "entries": [
+      { "time": "", "title": "", "detail": "" },
+      { "time": "", "title": "", "detail": "" },
+      { "time": "", "title": "", "detail": "" },
+      { "time": "", "title": "", "detail": "" },
+      { "time": "", "title": "", "detail": "" },
+      { "time": "", "title": "", "detail": "" },
+      { "time": "", "title": "", "detail": "" },
+      { "time": "", "title": "", "detail": "" }
+    ]
+  },
+  "stats": {
+    "title": "Resident Stats",
+    "subtitle": "",
+    "items": [
+      { "label": "", "value": "" },
+      { "label": "", "value": "" },
+      { "label": "", "value": "" },
+      { "label": "", "value": "" },
+      { "label": "", "value": "" },
+      { "label": "", "value": "" },
+      { "label": "", "value": "" },
+      { "label": "", "value": "" }
+    ]
+  },
+  "gallery": {
+    "title": "Little Moments",
+    "subtitle": "",
+    "photos": [
+      { "image": "", "alt": "", "caption": "", "tag": "" },
+      { "image": "", "alt": "", "caption": "", "tag": "" },
+      { "image": "", "alt": "", "caption": "", "tag": "" },
+      { "image": "", "alt": "", "caption": "", "tag": "" },
+      { "image": "", "alt": "", "caption": "", "tag": "" },
+      { "image": "", "alt": "", "caption": "", "tag": "" },
+      { "image": "", "alt": "", "caption": "", "tag": "" },
+      { "image": "", "alt": "", "caption": "", "tag": "" }
+    ]
+  },
+  "reveal": {
+    "years": "2",
+    "startDate": "October 4th",
+    "jobTitle": "",
+    "employer": "",
+    "saving": {
+      "title": "Saving...",
+      "note": "Do not turn off the power.",
+      "aside": "(This is a completely normal save. Nothing is about to happen.)"
+    },
+    "announcement": {
+      "speaker": "Resident Services",
+      "badge": "Island news!",
+      "line": "{name} is *moving up*!",
+      "detail": "After {years} years as {son}'s stay-at-home mom, she is starting a new job on {startDate}."
+    },
+    "achievement": {
+      "badge": "Nook Miles+ · Achievement unlocked",
+      "stamp": "Hired!",
+      "title": "Career change!",
+      "detail": "After {years} years as {son}'s stay-at-home mom, {name} is starting a new job on {startDate}.",
+      "ticketLabel": "Confirmed milestone",
+      "ticketValue": "New job"
+    },
+    "letter": {
+      "greeting": "Dear everyone,",
+      "lines": [
+        "After {years} years as *{son}*'s stay-at-home mom, I'm starting a new job.",
+        "My first day is {startDate}."
+      ],
+      "signature": "{name}",
+      "ps": "",
+      "calendarLabel": "First day"
+    },
+    "finale": {
+      "tag": "From everyone at {venue}",
+      "line": "Congratulations, {name}!",
+      "detail": "A new job begins {startDate}."
+    }
+  }
+}

@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Cheerful island vista</title>
+  <desc id="desc">A bright, softly shaded island landscape with rounded clouds, rolling green hills, friendly trees, a sandy path, beach, and sparkling blue water.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="650" gradientUnits="userSpaceOnUse"><stop stop-color="#C6EAF8"/><stop offset=".55" stop-color="#8ED4F0"/><stop offset="1" stop-color="#5FB4D8"/></linearGradient>
+    <linearGradient id="farHill" x1="0" y1="340" x2="0" y2="700" gradientUnits="userSpaceOnUse"><stop stop-color="#A8DD7C"/><stop offset="1" stop-color="#7EC850"/></linearGradient>
+    <linearGradient id="nearHill" x1="0" y1="470" x2="0" y2="900" gradientUnits="userSpaceOnUse"><stop stop-color="#8FCB57"/><stop offset="1" stop-color="#6BA83C"/></linearGradient>
+    <linearGradient id="water" x1="0" y1="680" x2="0" y2="900" gradientUnits="userSpaceOnUse"><stop stop-color="#8ED4F0"/><stop offset="1" stop-color="#5CC4E0"/></linearGradient>
+    <radialGradient id="calmGlow" cx="50%" cy="43%" r="55%"><stop stop-color="#C6EAF8" stop-opacity=".64"/><stop offset="1" stop-color="#C6EAF8" stop-opacity="0"/></radialGradient>
+    <filter id="blur18" x="-20%" y="-30%" width="140%" height="160%"><feGaussianBlur stdDeviation="18"/></filter>
+    <filter id="softShadow" x="-40%" y="-40%" width="180%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="7" result="b"/><feOffset dy="8" result="o"/><feFlood flood-color="#4E9C2E" flood-opacity=".22"/><feComposite in2="o" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <circle cx="800" cy="370" r="390" fill="url(#calmGlow)"/>
+  <circle cx="1380" cy="122" r="64" fill="#F5D76E" opacity=".82"/>
+  <circle cx="1380" cy="122" r="94" fill="#F5D76E" opacity=".14" filter="url(#blur18)"/>
+
+  <!-- soft rounded clouds -->
+  <g fill="#FFFDF4" opacity=".9">
+    <path d="M80 170c10-31 43-47 70-28 22-44 91-35 102 12 35-10 70 12 73 47H65c-6-13 1-26 15-31Z"/>
+    <path d="M1078 207c10-26 36-37 59-21 20-38 78-29 85 13 30-8 57 10 60 39h-218c-4-14 2-26 14-31Z" opacity=".78"/>
+    <path d="M575 104c8-20 30-29 47-15 17-30 63-22 67 11 25-6 46 9 47 32H563c-3-12 1-22 12-28Z" opacity=".7"/>
+  </g>
+  <g fill="#C6EAF8" opacity=".55"><ellipse cx="209" cy="216" rx="108" ry="12"/><ellipse cx="1175" cy="251" rx="90" ry="10"/></g>
+
+  <!-- distant water and far shoreline -->
+  <path d="M0 580c248-34 437-19 643 19 259 47 544 24 957-34v335H0Z" fill="url(#water)"/>
+  <g fill="none" stroke="#C6EAF8" stroke-width="9" stroke-linecap="round" opacity=".72">
+    <path d="M36 672c98-19 178-19 276 0M1201 647c83-16 168-14 250 5M1044 735c57-10 114-9 170 4"/>
+  </g>
+
+  <!-- layered hills, broad and quiet in center -->
+  <path d="M-60 563c199-173 425-197 650-74 123-101 297-125 455-40 143-136 370-150 615 19v231H-60Z" fill="url(#farHill)"/>
+  <path d="M-70 615c242-132 475-118 686 10 220-105 451-100 649 9 127-85 259-91 405-31v297H-70Z" fill="url(#nearHill)"/>
+  <path d="M0 624c224-109 428-86 610 24" fill="none" stroke="#A8DD7C" stroke-width="18" opacity=".42"/>
+  <path d="M1006 620c184-97 391-100 594-22" fill="none" stroke="#A8DD7C" stroke-width="18" opacity=".35"/>
+  <ellipse cx="800" cy="564" rx="410" ry="150" fill="#A8DD7C" opacity=".16" filter="url(#blur18)"/>
+
+  <!-- sandy winding path -->
+  <path d="M642 900c37-84 103-126 212-170 95-38 101-86 37-134-23-17-20-38 16-55 37-17 80-29 130-32 18-1 27 14 10 23-38 20-62 42-59 66 6 48 87 70 71 124-14 47-121 75-142 178Z" fill="#F0DCA8"/>
+  <path d="M690 900c38-68 93-103 187-143 88-38 108-78 66-122" fill="none" stroke="#F2E8C9" stroke-width="12" stroke-linecap="round" opacity=".45"/>
+
+  <!-- trees pushed to sides to preserve central composition -->
+  <g transform="translate(72 382)" filter="url(#softShadow)">
+    <path d="M115 170c-7 74-12 141-3 220h57c8-81 2-151-8-220Z" fill="#8A6136"/>
+    <path d="M129 180c-2 65 2 133 13 194" fill="none" stroke="#B98A5A" stroke-width="12" stroke-linecap="round" opacity=".65"/>
+    <circle cx="78" cy="139" r="75" fill="#6BA83C"/><circle cx="154" cy="105" r="93" fill="#7EC850"/><circle cx="219" cy="153" r="76" fill="#6BA83C"/><circle cx="132" cy="178" r="84" fill="#8FCB57"/>
+    <g fill="#A8DD7C" opacity=".68"><ellipse cx="122" cy="70" rx="45" ry="24" transform="rotate(-18 122 70)"/><ellipse cx="73" cy="121" rx="34" ry="20" transform="rotate(-25 73 121)"/></g>
+  </g>
+  <g transform="translate(1308 400) scale(.88)" filter="url(#softShadow)">
+    <path d="M115 170c-7 74-12 141-3 220h57c8-81 2-151-8-220Z" fill="#8A6136"/>
+    <path d="M129 180c-2 65 2 133 13 194" fill="none" stroke="#B98A5A" stroke-width="12" stroke-linecap="round" opacity=".65"/>
+    <circle cx="78" cy="139" r="75" fill="#6BA83C"/><circle cx="154" cy="105" r="93" fill="#7EC850"/><circle cx="219" cy="153" r="76" fill="#6BA83C"/><circle cx="132" cy="178" r="84" fill="#8FCB57"/>
+    <g fill="#A8DD7C" opacity=".68"><ellipse cx="122" cy="70" rx="45" ry="24" transform="rotate(-18 122 70)"/><ellipse cx="73" cy="121" rx="34" ry="20" transform="rotate(-25 73 121)"/></g>
+  </g>
+  <g transform="translate(355 443) scale(.52)" opacity=".86">
+    <path d="M115 170c-7 74-12 141-3 220h57c8-81 2-151-8-220Z" fill="#8A6136"/><circle cx="78" cy="139" r="75" fill="#6BA83C"/><circle cx="154" cy="105" r="93" fill="#7EC850"/><circle cx="219" cy="153" r="76" fill="#6BA83C"/><circle cx="132" cy="178" r="84" fill="#8FCB57"/>
+  </g>
+
+  <!-- beach hints in lower corners -->
+  <path d="M0 780c159-70 305-68 438 5 45 25 81 63 107 115H0Z" fill="#F0DCA8"/>
+  <path d="M1177 900c47-79 116-130 206-151 75-17 149-11 217 18v133Z" fill="#F0DCA8"/>
+  <g fill="#FFFDF4" opacity=".72"><path d="M0 776c141-52 290-45 420 15-130-38-276-30-420 24Z"/><path d="M1218 857c100-72 250-91 382-56v33c-134-21-255 1-350 66Z"/></g>
+
+  <!-- tiny foreground nature details -->
+  <g fill="#F2A0B6"><circle cx="321" cy="741" r="12"/><circle cx="346" cy="760" r="11"/><circle cx="296" cy="764" r="10"/></g>
+  <g fill="#F5D76E"><circle cx="1190" cy="705" r="11"/><circle cx="1212" cy="722" r="10"/><circle cx="1171" cy="727" r="9"/></g>
+  <g fill="none" stroke="#4E9C2E" stroke-width="7" stroke-linecap="round"><path d="M321 773v36M1191 737v37"/><path d="M276 832q18-35 36 0M1244 820q18-35 36 0"/></g>
+  <g fill="#FFFFFF" opacity=".8"><ellipse cx="523" cy="315" rx="7" ry="3" transform="rotate(-12 523 315)"/><ellipse cx="1056" cy="336" rx="8" ry="3" transform="rotate(8 1056 336)"/></g>
+</svg>

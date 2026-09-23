@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resident Stats — Allyssa's Nook Miles (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat:wght@600;700&family=Nunito:wght@500;700;800&display=swap">
+<link rel="stylesheet" href="../../assets/tokens.css">
+<link rel="stylesheet" href="../../assets/base.css">
+<style>
+  /* ---- section-local styles only; primitives come from base.css ---- */
+  :root {
+    --st-emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    --st-shade: color-mix(in srgb, var(--ac-ink) 16%, transparent);
+  }
+
+  body { background: var(--ac-sky-light); }
+
+  .stats {
+    position: relative;
+    min-height: 100vh;
+    padding: var(--sp-6) 0 var(--sp-7);
+    overflow: hidden;
+    /* Nook Stop style diagonal stripes */
+    background:
+      repeating-linear-gradient(135deg,
+        color-mix(in srgb, var(--ac-white) 30%, transparent) 0 26px,
+        transparent 26px 52px),
+      var(--ac-sky-light);
+  }
+  .stats > .ac-wrap { position: relative; z-index: var(--z-ui); }
+
+  /* ---------- header: a Nook Phone app bar ---------- */
+  .stats__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--sp-5);
+    align-items: end;
+    margin-bottom: var(--sp-6);
+  }
+  .stats__kicker {
+    font-family: var(--ac-font-hand);
+    font-size: 1.7rem;
+    color: var(--ac-ink-soft);
+    margin: 0 0 var(--sp-1);
+    display: inline-block;
+    transform: rotate(-2deg);
+  }
+  .stats__sub { margin: var(--sp-2) 0 0; max-width: 56ch; }
+
+  .passport {
+    display: flex; align-items: center; gap: var(--sp-4);
+    padding: var(--sp-3) var(--sp-5) var(--sp-3) var(--sp-3);
+    border-radius: var(--r-pill);
+  }
+  .passport__face {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: var(--ac-sky);
+    overflow: hidden;
+    flex: none;
+    box-shadow: inset 0 0 0 4px var(--ac-paper), 0 2px 0 var(--st-shade);
+  }
+  .passport__face img { width: 100%; height: auto; margin-top: 4px; }
+  .passport__name { font-size: var(--ac-fs-h3); }
+  .passport__role { margin: 0; font-size: var(--ac-fs-small); color: var(--ac-ink-soft); font-weight: 700; }
+
+  /* ---------- pending banner ---------- */
+  .pending {
+    display: flex; align-items: center; gap: var(--sp-3);
+    flex-wrap: wrap;
+    margin: 0 0 var(--sp-6);
+    padding: var(--sp-3) var(--sp-5);
+    background: var(--ac-paper);
+    border: 3px dashed var(--ac-pink);
+    border-radius: var(--r-md);
+    font-weight: 700;
+  }
+  .pending strong { font-family: var(--ac-font-ui); color: var(--ac-pink-deep); }
+
+  /* ---------- the ticket grid ---------- */
+  .tickets {
+    list-style: none; margin: 0; padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-6) var(--sp-5);
+  }
+  .tickets > li { display: flex; }
+
+  .mile {
+    position: relative;
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: var(--r-md);
+    background: transparent;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    transition: transform var(--t-mid) var(--ease-bounce);
+  }
+  .mile__paper {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--sp-2) var(--sp-4);
+    align-items: center;
+    height: 100%;
+    padding: var(--sp-5) var(--sp-5) var(--sp-4) var(--sp-6);
+  }
+  .tickets > li:nth-child(odd)  .mile { transform: rotate(-1deg); }
+  .tickets > li:nth-child(even) .mile { transform: rotate(1deg); }
+  .mile:hover { transform: translateY(-4px) rotate(0) !important; }
+  .mile:focus-visible { outline: 4px solid var(--ac-nook-blue); outline-offset: 4px; }
+
+  /* dashed tear line */
+  .mile::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+    left: 20px; top: 14px; bottom: 14px;
+    border-left: 3px dashed color-mix(in srgb, var(--ac-ink-strong) 25%, transparent);
+  }
+  .mile__icon {
+    grid-row: span 2;
+    width: 70px; aspect-ratio: 1;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: var(--ac-paper);
+    box-shadow: 0 3px 0 var(--st-shade), inset 0 0 0 4px var(--ac-cream-deep);
+    font-family: var(--st-emoji);
+    font-size: 2.1rem; line-height: 1;
+  }
+  .mile .ac-ticket__label { display: block; }
+  .mile .ac-ticket__value {
+    display: flex; align-items: baseline; gap: var(--sp-2);
+    flex-wrap: wrap;
+  }
+  .mile__dash { letter-spacing: .05em; }
+  .mile__unit {
+    font-family: var(--ac-font-hand);
+    font-weight: 700;
+    font-size: 1.35rem;
+    opacity: .8;
+  }
+  .mile__quip {
+    grid-column: 1 / -1;
+    margin: var(--sp-2) 0 0;
+    font-size: var(--ac-fs-small);
+    font-weight: 700;
+    color: var(--ac-ink);
+  }
+  .mile__tier {
+    grid-column: 1 / -1;
+    display: flex; gap: 6px; align-items: center;
+    margin-top: var(--sp-1);
+    font-family: var(--ac-font-ui); font-weight: 800; font-size: .72rem;
+    color: var(--ac-ink-strong); opacity: .7;
+    text-transform: uppercase; letter-spacing: .08em;
+  }
+  .mile__dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: color-mix(in srgb, var(--ac-ink-strong) 14%, transparent);
+  }
+
+  /* stamps */
+  .mile .ac-stamp {
+    position: absolute;
+    right: 14px; top: -16px;
+    z-index: 2;
+    font-size: .74rem;
+    background: var(--ac-paper);
+    box-shadow: 0 3px 0 var(--st-shade);
+  }
+  .ac-stamp--pending {
+    color: var(--ac-nook-blue);
+    border-color: var(--ac-nook-blue);
+    border-style: dashed;
+    transform: rotate(8deg);
+  }
+
+  /* selected / flipped state shows the "to be supplied" slip */
+  .mile[aria-pressed="true"] {
+    box-shadow: 0 0 0 5px var(--ac-paper), 0 0 0 9px var(--ac-leaf);
+  }
+
+  /* ---------- detail dialogue ---------- */
+  .stats__foot {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--sp-5);
+    align-items: end;
+    margin-top: var(--sp-7);
+  }
+  .stats__ally {
+    width: clamp(110px, 10vw, 150px); height: auto;
+    filter: drop-shadow(0 6px 0 var(--st-shade));
+  }
+  .stats__foot .ac-box { margin-bottom: var(--sp-6); }
+  .stats__foot .ac-box p { margin: 0; }
+  .ph {
+    background: var(--ac-cream-deep);
+    border-bottom: 2px dotted var(--ac-ink-soft);
+    padding: 0 .2em;
+  }
+
+  /* ---------- mockup badge ---------- */
+  .mock-badge {
+    position: fixed;
+    top: var(--sp-3); right: var(--sp-3);
+    z-index: var(--z-modal);
+    pointer-events: none;
+    font-family: var(--ac-font-ui); font-weight: 800;
+    font-size: .72rem; letter-spacing: .12em;
+    color: var(--ac-ink-soft);
+    background: var(--ac-paper);
+    border: 2px dashed var(--ac-cream-edge);
+    border-radius: var(--r-pill);
+    padding: .25em .9em;
+    opacity: .75;
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 1080px) {
+    .tickets { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .stats__head { grid-template-columns: minmax(0, 1fr); }
+    .tickets { grid-template-columns: minmax(0, 1fr); }
+    .stats__foot { grid-template-columns: minmax(0, 1fr); }
+    .stats__ally { display: none; }
+    .mile__icon { width: 58px; font-size: 1.7rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mile { transition: none; }
+    .tickets > li .mile, .mile:hover { transform: none !important; }
+    .ac-petal, .ac-next { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<span class="mock-badge" aria-hidden="true">DATA: MOCKUP</span>
+
+<main>
+  <section class="stats" aria-labelledby="stats-title">
+    <div class="ac-petals" aria-hidden="true">
+      <span class="ac-petal" style="left:4%;top:10%"></span>
+      <span class="ac-petal" style="left:60%;top:4%"></span>
+      <span class="ac-petal" style="left:95%;top:40%"></span>
+      <span class="ac-petal" style="left:2%;top:86%"></span>
+      <span class="ac-petal" style="left:78%;top:95%"></span>
+    </div>
+
+    <div class="ac-wrap">
+      <header class="stats__head">
+        <div>
+          <p class="stats__kicker">03 / 05</p>
+          <h2 id="stats-title" class="ac-heading"><span class="ac-leaf" aria-hidden="true"></span>Resident Stats</h2>
+          <p class="stats__sub">A place for confirmed facts about <span class="ac-hl">Allyssa</span>. Labels and values remain blank until supplied.</p>
+        </div>
+        <div class="passport ac-card">
+          <div class="passport__face"><img src="../../assets/allyssa-stand.svg" width="360" height="560" alt="Allyssa's villager portrait"></div>
+          <div>
+            <h3 class="passport__name">Allyssa</h3>
+            <p class="passport__role">Profile details to be supplied</p>
+          </div>
+        </div>
+      </header>
+
+      <p class="pending" role="note">
+        <span class="ac-tag ac-tag--pink">Heads up</span>
+        <span><strong>Real numbers pending.</strong> Every count below is intentionally blank (—) until Allyssa's family supplies the facts.</span>
+      </p>
+
+      <ul class="tickets" aria-label="Blank fact cards">
+        <li>
+          <button type="button" class="mile" aria-pressed="true" data-stat="Blank fact 1" data-say="Label: Add your fact. Value: Add value.">
+            <span class="ac-stamp">Pending</span>
+            <span class="mile__paper ac-ticket">
+            <span class="mile__icon" aria-hidden="true">＋</span>
+            <span class="ac-ticket__label">Label: Add your fact</span>
+            <span class="ac-ticket__value"><span class="mile__dash" aria-hidden="true">— —</span><span class="ac-sr">Count to be supplied</span><span class="mile__unit">Add value</span></span>
+            <span class="mile__quip">Description: Add your fact</span>
+            <span class="mile__tier">No tier assigned</span>
+            </span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="mile" aria-pressed="false" data-stat="Blank fact 2" data-say="Label: Add your fact. Value: Add value.">
+            <span class="ac-stamp">Pending</span>
+            <span class="mile__paper ac-ticket">
+            <span class="mile__icon" aria-hidden="true">＋</span>
+            <span class="ac-ticket__label">Label: Add your fact</span>
+            <span class="ac-ticket__value"><span class="mile__dash" aria-hidden="true">— —</span><span class="ac-sr">Count to be supplied</span><span class="mile__unit">Add value</span></span>
+            <span class="mile__quip">Description: Add your fact</span>
+            <span class="mile__tier">No tier assigned</span>
+            </span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="mile" aria-pressed="false" data-stat="Blank fact 3" data-say="Label: Add your fact. Value: Add value.">
+            <span class="ac-stamp ac-stamp--pending">Pending</span>
+            <span class="mile__paper ac-ticket">
+            <span class="mile__icon" aria-hidden="true">＋</span>
+            <span class="ac-ticket__label">Label: Add your fact</span>
+            <span class="ac-ticket__value"><span class="mile__dash" aria-hidden="true">— —</span><span class="ac-sr">Count to be supplied</span><span class="mile__unit">Add value</span></span>
+            <span class="mile__quip">Description: Add your fact</span>
+            <span class="mile__tier">No tier assigned</span>
+            </span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="mile" aria-pressed="false" data-stat="Blank fact 4" data-say="Label: Add your fact. Value: Add value.">
+            <span class="ac-stamp">Pending</span>
+            <span class="mile__paper ac-ticket">
+            <span class="mile__icon" aria-hidden="true">＋</span>
+            <span class="ac-ticket__label">Label: Add your fact</span>
+            <span class="ac-ticket__value"><span class="mile__dash" aria-hidden="true">— —</span><span class="ac-sr">Count to be supplied</span><span class="mile__unit">Add value</span></span>
+            <span class="mile__quip">Description: Add your fact</span>
+            <span class="mile__tier">No tier assigned</span>
+            </span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="mile" aria-pressed="false" data-stat="Blank fact 5" data-say="Label: Add your fact. Value: Add value.">
+            <span class="ac-stamp">Pending</span>
+            <span class="mile__paper ac-ticket">
+            <span class="mile__icon" aria-hidden="true">＋</span>
+            <span class="ac-ticket__label">Label: Add your fact</span>
+            <span class="ac-ticket__value"><span class="mile__dash" aria-hidden="true">— —</span><span class="ac-sr">Count to be supplied</span><span class="mile__unit">Add value</span></span>
+            <span class="mile__quip">Description: Add your fact</span>
+            <span class="mile__tier">No tier assigned</span>
+            </span>
+          </button>
+        </li>
+        <li>
+          <button type="button" class="mile" aria-pressed="false" data-stat="Blank fact 6" data-say="Label: Add your fact. Value: Add value.">
+            <span class="ac-stamp ac-stamp--pending">Pending</span>
+            <span class="mile__paper ac-ticket">
+            <span class="mile__icon" aria-hidden="true">＋</span>
+            <span class="ac-ticket__label">Label: Add your fact</span>
+            <span class="ac-ticket__value"><span class="mile__dash" aria-hidden="true">— —</span><span class="ac-sr">Count to be supplied</span><span class="mile__unit">Add value</span></span>
+            <span class="mile__quip">Description: Add your fact</span>
+            <span class="mile__tier">No tier assigned</span>
+            </span>
+          </button>
+        </li>
+      </ul>
+
+      <div class="stats__foot">
+        <img class="stats__ally" src="../../assets/allyssa-stand.svg" width="360" height="560" alt="Allyssa smiling with her eyes closed">
+        <div class="ac-box" role="group" aria-label="Selected blank fact details">
+          <span class="ac-namechip">Fact placeholder</span>
+          <p id="stats-say" aria-live="polite">Label: <span class="ph">Add your fact</span>. Value: Add value.</p>
+          <span class="ac-next" aria-hidden="true"></span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var miles = Array.prototype.slice.call(document.querySelectorAll('.mile'));
+  var out = document.getElementById('stats-say');
+
+  function show(btn) {
+    miles.forEach(function (m) { m.setAttribute('aria-pressed', m === btn ? 'true' : 'false'); });
+    var text = btn.getAttribute('data-say') || '';
+    var cut = text.indexOf('to be supplied');
+    out.textContent = '';
+    if (cut < 0) { out.textContent = text; return; }
+    out.appendChild(document.createTextNode(text.slice(0, cut)));
+    var ph = document.createElement('span');
+    ph.className = 'ph';
+    ph.textContent = 'to be supplied';
+    out.appendChild(ph);
+    out.appendChild(document.createTextNode(text.slice(cut + 14)));
+  }
+
+  miles.forEach(function (m) {
+    m.addEventListener('click', function () { show(m); });
+  });
+})();
+</script>
+</body>
+</html>

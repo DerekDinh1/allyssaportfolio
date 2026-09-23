@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Character comparison — review mockup (not deployed)</title>
+<link rel="stylesheet" href="../assets/tokens.css">
+<style>
+  :root { --ink:#4A3423; --soft:#7B5B43; --bg:#FBF6E0; --card:#FFFDF4; --edge:#E4D7AE; --warn:#9a4a12; --warnbg:#fff1e0; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink); background:var(--bg); }
+  main { max-width:1360px; margin:0 auto; padding:28px 24px 48px; }
+  h1 { font-size:1.5rem; margin:6px 0 4px; }
+  .tag { display:inline-block; font:700 12px/1 ui-monospace,Menlo,monospace; letter-spacing:.12em; background:var(--ink); color:#fff; padding:5px 8px; border-radius:4px; }
+  .note { border:2px solid var(--warn); background:var(--warnbg); color:var(--warn); border-radius:8px; padding:10px 14px; margin:14px 0 20px; }
+  .note p { margin:4px 0; }
+  .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
+  .panel { background:var(--card); border:1px solid var(--edge); border-radius:14px; padding:14px; display:flex; flex-direction:column; }
+  .panel h2 { font-size:1.05rem; margin:0 0 4px; }
+  .panel p.cap { margin:0 0 10px; color:var(--soft); font-size:.9rem; }
+  .stage { position:relative; aspect-ratio:16/9; border-radius:10px; overflow:hidden; background:#D9A96C; }
+  .stage > .bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .stage.plain { background:#efe6d2; display:flex; align-items:center; justify-content:center; }
+
+  /* A: existing SVG on office background */
+  .svgfig { position:absolute; left:50%; bottom:4%; height:82%; transform:translateX(-50%); }
+
+  /* B: supplied original, unchanged pixels, shown at native 400px max */
+  .orig { display:block; width:100%; max-width:400px; height:auto; margin:0 auto; image-rendering:auto; }
+
+  /* C: reference-backed treatment — original image in soft rounded frame (CSS only, no pixel edits) */
+  .shadow { position:absolute; left:50%; bottom:5%; width:34%; height:7%; transform:translateX(-50%);
+            background:radial-gradient(ellipse at center, rgba(60,35,15,.38) 0%, rgba(60,35,15,.18) 45%, rgba(60,35,15,0) 72%); }
+  .frame { position:absolute; left:50%; bottom:8%; height:78%; aspect-ratio:1/1; transform:translateX(-50%);
+           border-radius:22px; overflow:hidden; background:var(--ac-cream,#FBF6E0);
+           box-shadow:0 10px 22px rgba(60,35,15,.28), 0 0 0 5px var(--ac-cream,#FBF6E0), 0 0 0 7px var(--ac-wood-mid,#9A6E42); }
+  .frame img { width:100%; height:100%; object-fit:cover; object-position:center; display:block;
+               -webkit-mask-image:radial-gradient(ellipse 78% 78% at 50% 50%, #000 70%, rgba(0,0,0,.85) 88%, rgba(0,0,0,.6) 100%);
+                       mask-image:radial-gradient(ellipse 78% 78% at 50% 50%, #000 70%, rgba(0,0,0,.85) 88%, rgba(0,0,0,.6) 100%); }
+  .label { position:absolute; left:8px; top:8px; font:700 11px/1 ui-monospace,Menlo,monospace; background:rgba(74,52,35,.85); color:#fff; padding:4px 6px; border-radius:4px; }
+  ul.facts { margin:10px 0 0; padding-left:18px; font-size:.88rem; color:var(--soft); }
+  code { font:12.5px ui-monospace,Menlo,monospace; background:#efe6d2; padding:1px 4px; border-radius:3px; }
+
+  @media (max-width: 1100px) { .grid { grid-template-columns:1fr 1fr; } .panel.c { grid-column:1 / -1; } }
+  @media (max-width: 700px)  { main { padding:18px 14px 36px; } .grid { grid-template-columns:1fr; } .panel.c { grid-column:auto; } .frame { border-radius:14px; } }
+</style>
+</head>
+<body>
+<main>
+  <span class="tag">REVIEW MOCKUP · NOT DEPLOYED</span>
+  <h1>Allyssa character — comparison</h1>
+  <div class="note" role="note">
+    <p><strong>No new 3D model.</strong> Option C shows the user-supplied original render itself, placed in a softly framed display over the unchanged office background. It is not a newly modelled, rigged or animated 3D character, and no new face or pose was invented.</p>
+    <p>Using the original render keeps the reference's appearance exactly as supplied. Its 400&times;400 px resolution limits how large it can be shown without softness; the frame is capped at its native width in panel B.</p>
+    <p><strong>Background cutout not attempted.</strong> Pixel sampling found the reference background is not a uniform color (corners and edges differ widely), so an automatic removal could erase hair, clothing or petals. The original pixels are shown untouched; C uses CSS framing and a soft mask only.</p>
+  </div>
+
+  <div class="grid">
+    <section class="panel a" aria-labelledby="ha">
+      <h2 id="ha">A · Existing SVG illustration</h2>
+      <p class="cap">Current <code>allyssa-stand.svg</code> on <code>office-bg.svg</code>. Not approved; was never verified against the reference.</p>
+      <div class="stage">
+        <img class="bg" src="../assets/office-bg.svg" alt="">
+        <img class="svgfig" src="../assets/allyssa-stand.svg" alt="Existing SVG illustration of Allyssa">
+        <span class="label">A</span>
+      </div>
+    </section>
+
+    <section class="panel b" aria-labelledby="hb">
+      <h2 id="hb">B · Supplied original (unchanged)</h2>
+      <p class="cap">Byte-identical copy of the user's reference, shown at no more than its native 400 px.</p>
+      <div class="stage plain">
+        <img class="orig" src="../assets/reference/allyssa-reference.jpg" width="400" height="400" alt="User-supplied original character reference image, unmodified">
+        <span class="label">B</span>
+      </div>
+    </section>
+
+    <section class="panel c" aria-labelledby="hc">
+      <h2 id="hc">C · Proposed: reference-backed display</h2>
+      <p class="cap">Original render in a soft cream frame with a ground shadow, on the unchanged office background. CSS only, no pixel edits.</p>
+      <div class="stage">
+        <img class="bg" src="../assets/office-bg.svg" alt="">
+        <div class="shadow" aria-hidden="true"></div>
+        <div class="frame">
+          <img src="../assets/reference/allyssa-reference.jpg" alt="Allyssa, shown with the user-supplied original render">
+        </div>
+        <span class="label">C</span>
+      </div>
+      <ul class="facts">
+        <li>Crop is centred with <code>object-fit: cover</code> on a square frame, so the full image stays visible. Framing was not checked by eye.</li>
+        <li>The soft edge is a CSS mask and can be removed with no change to the image file.</li>
+      </ul>
+    </section>
+  </div>
+</main>
+</body>
+</html>

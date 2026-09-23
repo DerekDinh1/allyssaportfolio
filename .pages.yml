@@ -1,0 +1,317 @@
+# Pages CMS configuration — https://pagescms.org/docs/configuration/
+# Edits ONE file: content/site.json. Uploaded photos are saved to assets/photos/.
+# OWNER: architect. The field names below MUST match content/site.json exactly
+# (see docs/BUILD.md, section 3). Renaming a field here breaks the site.
+
+media:
+  input: assets/photos
+  output: assets/photos
+  categories: [image]
+  extensions: [jpg, jpeg, png, webp, gif]
+  rename: safe
+
+content:
+  - name: site
+    label: Allyssa's website — all text & photos
+    type: file
+    path: content/site.json
+    format: json
+    fields:
+      # ------------------------------------------------------------ SITE
+      - name: site
+        label: Whole site
+        type: object
+        fields:
+          - name: title
+            label: Browser tab title
+            type: string
+            description: Shown in the browser tab.
+          - name: tagline
+            label: Tagline (optional)
+            type: string
+            description: A short line under the title. Leave blank to hide it.
+          - name: name
+            label: Her name
+            type: string
+            description: Used wherever the site says her name.
+          - name: son
+            label: Her son's name
+            type: string
+          - name: portrait
+            label: Character portrait (do not change)
+            type: string
+            readonly: true
+            description: Allyssa's own character image. Fixed on purpose.
+          - name: portraitAlt
+            label: Portrait description (for screen readers)
+            type: string
+          - name: editUrl
+            label: "\"Edit content\" link address (optional)"
+            type: string
+            description: Paste the Pages CMS address here to show a small "Edit content" link at the bottom of the site. Leave blank to hide it.
+
+      # ------------------------------------------------------------ BUTTONS
+      - name: ui
+        label: Buttons & small labels
+        type: object
+        fields:
+          - name: startPrompt
+            label: Start screen prompt
+            type: string
+          - name: startHint
+            label: Start screen hint
+            type: string
+          - name: skipLink
+            label: Skip link (keyboard users)
+            type: string
+          - name: next
+            label: "\"Next\" button"
+            type: string
+          - name: keepGoing
+            label: "\"Keep going\" hint"
+            type: string
+          - name: replay
+            label: "\"Play it again\" button"
+            type: string
+          - name: soundOn
+            label: Sound-on button
+            type: string
+          - name: soundOff
+            label: Sound-off button
+            type: string
+          - name: editLink
+            label: Edit link text
+            type: string
+          - name: emptyEntry
+            label: Text shown on a blank card
+            type: string
+          - name: emptyPhoto
+            label: Text shown on a photo frame with no photo yet
+            type: string
+          - name: emptySection
+            label: Text shown when a whole section is empty
+            type: string
+
+      # ------------------------------------------------------------ OPENING
+      - name: opening
+        label: 1 · Opening announcement
+        type: object
+        fields:
+          - name: speaker
+            label: Name on the speech bubble
+            type: string
+            description: "{name} is replaced with her name."
+          - name: venue
+            label: Where you are presenting
+            type: string
+          - name: announcement
+            label: First line (live date and time)
+            type: text
+            description: "Keep {venue}, {time}, {weekday} and {date} — they fill in automatically with the real current time. Wrap words in *stars* to make them pink."
+          - name: dialogue
+            label: Next speech lines
+            type: text
+            list: true
+            description: "One speech bubble per line, shown in order. You can use {name} and {son}. Wrap words in *stars* to make them pink."
+
+      # ------------------------------------------------------------ DAILY LIFE
+      - name: dailyLife
+        label: 2 · A day in the life
+        type: object
+        fields:
+          - name: title
+            label: Section heading
+            type: string
+          - name: subtitle
+            label: Small line under the heading (optional)
+            type: string
+          - name: entries
+            label: Schedule
+            type: object
+            description: One card per time of day. Blank cards show as friendly placeholders.
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{index}. {time} {title}"
+            fields:
+              - name: time
+                label: Time
+                type: string
+                description: "Any wording, e.g. a clock time or \"Morning\"."
+              - name: title
+                label: What's happening
+                type: string
+              - name: detail
+                label: A little more detail (optional)
+                type: text
+
+      # ------------------------------------------------------------ STATS
+      - name: stats
+        label: 3 · Resident stats
+        type: object
+        fields:
+          - name: title
+            label: Section heading
+            type: string
+          - name: subtitle
+            label: Small line under the heading (optional)
+            type: string
+          - name: items
+            label: Stats
+            type: object
+            description: One ticket per stat. If the number part is a plain number it counts up on screen.
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{index}. {label} {value}"
+            fields:
+              - name: label
+                label: What it counts
+                type: string
+              - name: value
+                label: Number or amount
+                type: string
+
+      # ------------------------------------------------------------ GALLERY
+      - name: gallery
+        label: 4 · Photos
+        type: object
+        fields:
+          - name: title
+            label: Section heading
+            type: string
+          - name: subtitle
+            label: Small line under the heading (optional)
+            type: string
+          - name: photos
+            label: Photos
+            type: object
+            description: Upload a photo and type a caption. Empty frames show a "coming soon" placeholder.
+            list:
+              collapsible:
+                collapsed: true
+                summary: "Photo {index}: {caption}"
+            fields:
+              - name: image
+                label: Photo
+                type: image
+                description: Click to upload. Saved into assets/photos.
+              - name: alt
+                label: Describe the photo (for screen readers)
+                type: string
+                description: If blank, the caption is used instead.
+              - name: caption
+                label: Caption
+                type: text
+              - name: tag
+                label: Little label (optional)
+                type: string
+
+      # ------------------------------------------------------------ REVEAL
+      - name: reveal
+        label: 5 · The surprise
+        type: object
+        fields:
+          - name: years
+            label: Years as a stay-at-home mom
+            type: string
+            description: Fills in {years}.
+          - name: startDate
+            label: First day of the new job
+            type: string
+            description: "Fills in {startDate}. Write it as words, e.g. October 4th. Do not add a year."
+          - name: jobTitle
+            label: Job title (optional)
+            type: string
+            description: Leave blank to keep it a mystery. Fills in {jobTitle}.
+          - name: employer
+            label: Workplace (optional)
+            type: string
+            description: Leave blank to keep it a mystery. Fills in {employer}.
+          - name: saving
+            label: "Step 1 · \"Saving...\" fake-out"
+            type: object
+            fields:
+              - name: title
+                label: Big text
+                type: string
+              - name: note
+                label: Small text
+                type: string
+              - name: aside
+                label: Joke line
+                type: string
+          - name: announcement
+            label: "Step 2 · \"Moving up!\" announcement"
+            type: object
+            fields:
+              - name: speaker
+                label: Name on the speech bubble
+                type: string
+              - name: badge
+                label: Little badge
+                type: string
+              - name: line
+                label: Big announcement
+                type: string
+                description: "Wrap words in *stars* to make them pink."
+              - name: detail
+                label: Line underneath
+                type: text
+          - name: achievement
+            label: Step 3 · Achievement stamp
+            type: object
+            fields:
+              - name: badge
+                label: Badge
+                type: string
+              - name: stamp
+                label: Stamp word
+                type: string
+              - name: title
+                label: Achievement title
+                type: string
+              - name: detail
+                label: Description
+                type: text
+              - name: ticketLabel
+                label: Ticket small label
+                type: string
+              - name: ticketValue
+                label: Ticket big text
+                type: string
+          - name: letter
+            label: Step 4 · Letter
+            type: object
+            fields:
+              - name: greeting
+                label: Greeting
+                type: string
+              - name: lines
+                label: Letter paragraphs
+                type: text
+                list: true
+                description: One paragraph per item.
+              - name: signature
+                label: Signed by
+                type: string
+              - name: ps
+                label: P.S. (optional)
+                type: text
+                description: Leave blank to hide the P.S.
+              - name: calendarLabel
+                label: Calendar sticker label
+                type: string
+          - name: finale
+            label: Step 5 · Congratulations
+            type: object
+            fields:
+              - name: tag
+                label: Little label on top
+                type: string
+              - name: line
+                label: Big congratulations line
+                type: string
+              - name: detail
+                label: Line underneath
+                type: string

@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Little Moments — Allyssa's Critterpedia (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Caveat:wght@600;700&family=Nunito:wght@500;700;800&display=swap">
+<link rel="stylesheet" href="../../assets/tokens.css">
+<link rel="stylesheet" href="../../assets/base.css">
+<style>
+  /* ---- section-local styles only; primitives come from base.css ---- */
+  :root {
+    --gal-emoji: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+    --gal-shade: color-mix(in srgb, var(--ac-ink) 16%, transparent);
+  }
+
+  body { background: var(--ac-cream-deep); }
+
+  .gal {
+    position: relative;
+    min-height: 100vh;
+    padding: var(--sp-6) 0 var(--sp-7);
+    overflow: hidden;
+    /* cork-ish scrapbook board with soft dots */
+    background:
+      radial-gradient(circle at 8px 8px, color-mix(in srgb, var(--ac-wood-light) 35%, transparent) 2px, transparent 3px) 0 0 / 22px 22px,
+      var(--ac-cream-deep);
+  }
+  .gal > .ac-wrap { position: relative; z-index: var(--z-ui); }
+
+  /* ---------- header ---------- */
+  .gal__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--sp-5);
+    align-items: end;
+    margin-bottom: var(--sp-6);
+  }
+  .gal__kicker {
+    font-family: var(--ac-font-hand);
+    font-size: 1.7rem;
+    color: var(--ac-ink-soft);
+    margin: 0 0 var(--sp-1);
+    display: inline-block;
+    transform: rotate(-2deg);
+  }
+  .gal__sub { margin: var(--sp-2) 0 0; max-width: 56ch; }
+
+  /* Critterpedia tabs (decorative category chips) */
+  .tabs { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+  .tabs span {
+    font-family: var(--ac-font-ui); font-weight: 800; font-size: var(--ac-fs-small);
+    padding: .35em 1em .42em;
+    border-radius: var(--r-pill);
+    background: var(--ac-paper);
+    color: var(--ac-ink-soft);
+    box-shadow: 0 3px 0 var(--ac-cream-edge);
+  }
+  .tabs span.is-on { background: var(--ac-leaf); color: var(--ac-white); text-shadow: 0 1px 2px var(--gal-shade); }
+
+  /* ---------- the album ---------- */
+  .album {
+    padding: var(--sp-6);
+    border-radius: var(--r-xl);
+  }
+  .album__bar {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: var(--sp-3); flex-wrap: wrap;
+    margin-bottom: var(--sp-5);
+  }
+  .album__title { font-size: var(--ac-fs-h3); }
+  .album__count { font-family: var(--ac-font-ui); font-weight: 800; color: var(--ac-ink-soft); font-size: var(--ac-fs-small); margin: 0; }
+
+  .frames {
+    list-style: none; margin: 0; padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-6) var(--sp-5);
+  }
+
+  .frame {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: var(--sp-3) var(--sp-3) var(--sp-4);
+    border: 0;
+    border-radius: var(--r-sm);
+    background: var(--ac-paper);
+    box-shadow: var(--sh-2);
+    font: inherit; color: inherit; text-align: center;
+    cursor: zoom-in;
+    transition: transform var(--t-mid) var(--ease-bounce);
+  }
+  .frames > li:nth-child(3n+1) .frame { transform: rotate(-2deg); }
+  .frames > li:nth-child(3n+2) .frame { transform: rotate(1.2deg); }
+  .frames > li:nth-child(3n)   .frame { transform: rotate(-.6deg); }
+  .frame:hover { transform: translateY(-5px) rotate(0) !important; }
+  .frame:focus-visible { outline: 4px solid var(--ac-nook-blue); outline-offset: 5px; }
+
+  /* tape corner */
+  .frame::before {
+    content: '';
+    position: absolute;
+    top: -12px; left: 50%;
+    width: 92px; height: 24px;
+    transform: translateX(-50%) rotate(-3deg);
+    background: color-mix(in srgb, var(--ac-chip) 80%, transparent);
+    box-shadow: 0 1px 0 var(--gal-shade);
+  }
+
+  /* the empty photo slot: an illustrated little scene, no image */
+  .frame__art {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: 6px;
+    overflow: hidden;
+    display: grid; place-items: center;
+    background:
+      linear-gradient(180deg, transparent 62%, var(--ground, var(--ac-grass)) 62%),
+      var(--sky, var(--ac-sky-light));
+  }
+  .frame__art::after {
+    /* dashed "photo goes here" inner border */
+    content: '';
+    position: absolute; inset: 10px;
+    border: 3px dashed color-mix(in srgb, var(--ac-white) 75%, transparent);
+    border-radius: 4px;
+  }
+  .frame__sun {
+    position: absolute; top: 14%; right: 12%;
+    width: 38px; height: 38px; border-radius: 50%;
+    background: var(--sun, var(--ac-ticket));
+    box-shadow: 0 0 0 8px color-mix(in srgb, var(--sun, var(--ac-ticket)) 30%, transparent);
+  }
+  .frame__icon {
+    position: relative;
+    font-family: var(--gal-emoji);
+    font-size: clamp(2.6rem, 4.4vw, 3.8rem);
+    line-height: 1;
+    filter: drop-shadow(0 4px 0 var(--gal-shade));
+  }
+  .frame__slot {
+    position: absolute; bottom: 16px; left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--ac-font-ui); font-weight: 800; font-size: .7rem;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ac-ink-strong);
+    background: color-mix(in srgb, var(--ac-paper) 85%, transparent);
+    padding: .15em .7em;
+    border-radius: var(--r-pill);
+    white-space: nowrap;
+    z-index: 1;
+  }
+  .frame__cap {
+    display: block;
+    margin-top: var(--sp-3);
+    font-family: var(--ac-font-hand);
+    font-size: 1.55rem;
+    line-height: 1.1;
+    color: var(--ac-ink);
+  }
+  .frame__meta {
+    display: flex; justify-content: center; gap: var(--sp-2); align-items: center;
+    margin-top: var(--sp-2);
+  }
+  .frame__no { font-family: var(--ac-font-ui); font-weight: 800; font-size: .78rem; color: var(--ac-ink-soft); }
+
+  /* scene palettes */
+  .sc-sun   { --sky: var(--ac-sky-light); --ground: var(--ac-grass); }
+  .sc-beach { --sky: var(--ac-sky);       --ground: var(--ac-sand); }
+  .sc-home  { --sky: var(--ac-wall);      --ground: var(--ac-floor-light); --sun: var(--ac-pink); }
+  .sc-park  { --sky: var(--ac-sky-light); --ground: var(--ac-grass-deep); }
+  .sc-bath  { --sky: var(--ac-sky-light); --ground: var(--ac-water); --sun: var(--ac-white); }
+  .sc-night { --sky: var(--ac-sky-deep);  --ground: var(--ac-wood-mid); --sun: var(--ac-cream); }
+
+  .gal__foot {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: var(--sp-4); flex-wrap: wrap;
+    margin-top: var(--sp-6);
+  }
+  .gal__hint { margin: 0; font-family: var(--ac-font-hand); font-size: 1.45rem; color: var(--ac-ink-soft); }
+  .gal__prompts { display: flex; gap: var(--sp-5); flex-wrap: wrap; }
+
+  /* ---------- enlarge dialog ---------- */
+  .viewer {
+    width: min(720px, 100% - 2 * var(--sp-4));
+    max-height: calc(100vh - 2 * var(--sp-5));
+    padding: 0;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+  }
+  .viewer::backdrop { background: color-mix(in srgb, var(--ac-ink-strong) 55%, transparent); }
+  .viewer[open] .viewer__card { animation: ac-pop .45s var(--ease-bounce) both; }
+  .viewer__card { padding: var(--sp-5); border-radius: var(--r-lg); }
+  .viewer__art { aspect-ratio: 4 / 3; border-radius: var(--r-sm); }
+  .viewer__art .frame__icon { font-size: 6rem; }
+  .viewer__title { font-size: var(--ac-fs-h3); margin: var(--sp-4) 0 var(--sp-1); }
+  .viewer__cap { margin: 0; font-family: var(--ac-font-hand); font-size: 1.8rem; line-height: 1.1; }
+  .viewer__note { margin: var(--sp-2) 0 0; font-size: var(--ac-fs-small); color: var(--ac-ink-soft); font-weight: 700; }
+  .viewer__close {
+    position: absolute; top: calc(-1 * var(--sp-3)); right: calc(-1 * var(--sp-3));
+    width: 48px; height: 48px;
+    border: 0; border-radius: 50%;
+    background: var(--ac-btn-b); color: var(--ac-white);
+    font: 800 1.2rem/1 var(--ac-font-ui);
+    box-shadow: 0 3px 0 var(--gal-shade);
+    cursor: pointer;
+  }
+  .viewer__close:focus-visible { outline: 4px solid var(--ac-nook-blue); outline-offset: 3px; }
+
+  /* ---------- mockup badge ---------- */
+  .mock-badge {
+    position: fixed;
+    top: var(--sp-3); right: var(--sp-3);
+    z-index: var(--z-modal);
+    pointer-events: none;
+    font-family: var(--ac-font-ui); font-weight: 800;
+    font-size: .72rem; letter-spacing: .12em;
+    color: var(--ac-ink-soft);
+    background: var(--ac-paper);
+    border: 2px dashed var(--ac-cream-edge);
+    border-radius: var(--r-pill);
+    padding: .25em .9em;
+    opacity: .75;
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 1080px) {
+    .frames { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .gal__head { grid-template-columns: minmax(0, 1fr); }
+    .album { padding: var(--sp-4); border-radius: var(--r-lg); }
+    .frames { grid-template-columns: minmax(0, 1fr); }
+    .viewer__close { top: var(--sp-2); right: var(--sp-2); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .frame { transition: none; }
+    .frames > li .frame, .frame:hover { transform: none !important; }
+    .viewer[open] .viewer__card, .ac-petal { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<span class="mock-badge" aria-hidden="true">DATA: MOCKUP</span>
+
+<main>
+  <section class="gal" aria-labelledby="gal-title">
+    <div class="ac-petals" aria-hidden="true">
+      <span class="ac-petal" style="left:3%;top:14%"></span>
+      <span class="ac-petal" style="left:44%;top:3%"></span>
+      <span class="ac-petal" style="left:96%;top:26%"></span>
+      <span class="ac-petal" style="left:92%;top:90%"></span>
+      <span class="ac-petal" style="left:2%;top:80%"></span>
+    </div>
+
+    <div class="ac-wrap">
+      <header class="gal__head">
+        <div>
+          <p class="gal__kicker">04 / 05</p>
+          <h2 id="gal-title" class="ac-heading"><span class="ac-leaf" aria-hidden="true"></span>Little Moments</h2>
+          <p class="gal__sub">Empty spaces for photos and captions about <span class="ac-hl">Allyssa</span>. No events or captions have been assumed.</p>
+        </div>
+        <div class="tabs" aria-hidden="true">
+          <span class="is-on">Photos</span><span>Captions pending</span>
+        </div>
+      </header>
+
+      <div class="album ac-card">
+        <div class="album__bar">
+          <h3 class="album__title">Scrapbook</h3>
+          <p class="album__count"><span class="ac-tag ac-tag--pink">Photos pending</span>&nbsp; 0 / 6 supplied</p>
+        </div>
+
+        <ul class="frames" id="frames">
+          <li>
+            <button type="button" class="frame" aria-haspopup="dialog" data-scene="sc-sun" data-icon="＋"
+              data-title="Photo slot 01" data-cap="Caption: Add your fact">
+              <span class="frame__art sc-sun" aria-hidden="true"><span class="frame__sun"></span><span class="frame__icon">＋</span><span class="frame__slot">Photo to be supplied</span></span>
+              <span class="frame__cap">Caption: Add your fact</span>
+              <span class="frame__meta"><span class="frame__no">No. 01</span><span class="ac-tag">Placeholder caption</span></span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="frame" aria-haspopup="dialog" data-scene="sc-beach" data-icon="＋"
+              data-title="Photo slot 02" data-cap="Caption: Add your fact">
+              <span class="frame__art sc-beach" aria-hidden="true"><span class="frame__sun"></span><span class="frame__icon">＋</span><span class="frame__slot">Photo to be supplied</span></span>
+              <span class="frame__cap">Caption: Add your fact</span>
+              <span class="frame__meta"><span class="frame__no">No. 02</span><span class="ac-tag">Placeholder caption</span></span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="frame" aria-haspopup="dialog" data-scene="sc-home" data-icon="＋"
+              data-title="Photo slot 03" data-cap="Caption: Add your fact">
+              <span class="frame__art sc-home" aria-hidden="true"><span class="frame__sun"></span><span class="frame__icon">＋</span><span class="frame__slot">Photo to be supplied</span></span>
+              <span class="frame__cap">Caption: Add your fact</span>
+              <span class="frame__meta"><span class="frame__no">No. 03</span><span class="ac-tag">Placeholder caption</span></span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="frame" aria-haspopup="dialog" data-scene="sc-park" data-icon="＋"
+              data-title="Photo slot 04" data-cap="Caption: Add your fact">
+              <span class="frame__art sc-park" aria-hidden="true"><span class="frame__sun"></span><span class="frame__icon">＋</span><span class="frame__slot">Photo to be supplied</span></span>
+              <span class="frame__cap">Caption: Add your fact</span>
+              <span class="frame__meta"><span class="frame__no">No. 04</span><span class="ac-tag">Placeholder caption</span></span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="frame" aria-haspopup="dialog" data-scene="sc-bath" data-icon="＋"
+              data-title="Photo slot 05" data-cap="Caption: Add your fact">
+              <span class="frame__art sc-bath" aria-hidden="true"><span class="frame__sun"></span><span class="frame__icon">＋</span><span class="frame__slot">Photo to be supplied</span></span>
+              <span class="frame__cap">Caption: Add your fact</span>
+              <span class="frame__meta"><span class="frame__no">No. 05</span><span class="ac-tag">Placeholder caption</span></span>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="frame" aria-haspopup="dialog" data-scene="sc-night" data-icon="＋"
+              data-title="Photo slot 06" data-cap="Caption: Add your fact">
+              <span class="frame__art sc-night" aria-hidden="true"><span class="frame__sun"></span><span class="frame__icon">＋</span><span class="frame__slot">Photo to be supplied</span></span>
+              <span class="frame__cap">Caption: Add your fact</span>
+              <span class="frame__meta"><span class="frame__no">No. 06</span><span class="ac-tag">Placeholder caption</span></span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="gal__foot">
+        <p class="gal__hint">These mockup slots stay empty until real photos are supplied.</p>
+        <div class="gal__prompts" aria-hidden="true">
+          <span class="ac-btn"><span class="ac-key ac-key--a">A</span>Enlarge</span>
+          <span class="ac-btn"><span class="ac-key ac-key--b">B</span>Close</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog class="viewer" id="viewer" aria-labelledby="viewer-title">
+  <div class="viewer__card ac-card">
+    <button type="button" class="viewer__close" id="viewer-close" aria-label="Close enlarged moment">✕</button>
+    <div class="frame__art viewer__art" id="viewer-art" aria-hidden="true"><span class="frame__sun"></span><span class="frame__icon" id="viewer-icon"></span><span class="frame__slot">Photo to be supplied</span></div>
+    <h3 class="viewer__title" id="viewer-title"></h3>
+    <p class="viewer__cap" id="viewer-cap"></p>
+    <p class="viewer__note">Mockup placeholder only: real photo and caption have not been supplied.</p>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  'use strict';
+  var dlg = document.getElementById('viewer');
+  if (!dlg || typeof dlg.showModal !== 'function') return; // static page still works without it
+  var art = document.getElementById('viewer-art');
+  var icon = document.getElementById('viewer-icon');
+  var title = document.getElementById('viewer-title');
+  var cap = document.getElementById('viewer-cap');
+  var opener = null;
+
+  Array.prototype.forEach.call(document.querySelectorAll('.frame'), function (btn) {
+    btn.addEventListener('click', function () {
+      opener = btn;
+      art.className = 'frame__art viewer__art ' + (btn.getAttribute('data-scene') || '');
+      icon.textContent = btn.getAttribute('data-icon') || '';
+      title.textContent = btn.getAttribute('data-title') || '';
+      cap.textContent = btn.getAttribute('data-cap') || '';
+      dlg.showModal();
+      document.getElementById('viewer-close').focus();
+    });
+  });
+
+  document.getElementById('viewer-close').addEventListener('click', function () { dlg.close(); });
+  dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+  dlg.addEventListener('close', function () { if (opener) opener.focus(); });
+})();
+</script>
+</body>
+</html>
