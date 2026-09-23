@@ -33,8 +33,12 @@
   /* Content scenes shown in presentation nav (surprise is a popup, not a slide). */
   var CONTENT_SCENES = 4;
   var CLOCK_INTERVAL_MS = 10000;   // update live clock every 10 s
-  var SAVING_HOLD_MS = 3200;       // how long the Saving... beat stays up
+  var SAVING_HOLD_MS = 5000;       // Saving... stays fully visible
+  var SAVING_FADE_MS = 3400;       // then slow fade out
   var SAVING_HOLD_REDUCED_MS = 900;
+  var SAVING_FADE_REDUCED_MS = 400;
+  var SCENE_LEAVE_MS = 420;
+  var SCENE_ENTER_MS = 720;
 
   /* cached DOM lookups populated during boot */
   var dom = {};
@@ -49,7 +53,8 @@
     startGateDismissed: false,
     surpriseOpen: false,           // true while surprise modal is up
     savingHoldUntil: 0,            // timestamp; beat 2 waits until this
-    surpriseStep: 0                // 0=idle, 1..5 = current surprise beat
+    surpriseStep: 0,               // 0=idle, 1..5 = current surprise beat
+    sceneBusy: false               // true during game-style scene wipe
   };
 
   /* ================================================================
@@ -294,6 +299,7 @@
 
   function scrollToScene(idx) {
     if (idx < 0) return;
+    if (state.sceneBusy) return;
 
     /* From gallery forward → open surprise popup instead of scrolling to #reveal */
     if (idx >= CONTENT_SCENES) {
@@ -305,11 +311,90 @@
     if (state.surpriseOpen) closeSurprise();
 
     var id = SECTION_IDS[idx];
-    var el = document.getElementById(id);
-    if (!el) return;
-    el.scrollIntoView({ behavior: state.reducedMotion ? 'auto' : 'smooth', block: 'start' });
-    enterScene(idx);
+    var nextEl = document.getElementById(id);
+    if (!nextEl) return;
+
+    var prevIdx = state.currentScene;
+    var prevEl = document.getElementById(SECTION_IDS[prevIdx]);
+    var goingForward = idx > prevIdx;
+
+    /* Same scene */
+    if (idx === prevIdx) {
+      setActiveScene(idx);
+      enterScene(idx);
+      return;
+    }
+
     sound('select');
+
+    /* Reduced motion: instant swap */
+    if (state.reducedMotion) {
+      setActiveScene(idx);
+      enterScene(idx);
+      return;
+    }
+
+    /* Game-style wipe: leave → leaf flash → enter with bounce */
+    state.sceneBusy = true;
+    document.body.classList.add('is-scene-transitioning');
+    ensureSceneWipe();
+
+    if (prevEl) {
+      prevEl.classList.remove('is-scene-enter-fwd', 'is-scene-enter-back', 'is-scene-active');
+      prevEl.classList.add(goingForward ? 'is-scene-leave-fwd' : 'is-scene-leave-back');
+    }
+    document.body.classList.add(goingForward ? 'wipe-fwd' : 'wipe-back', 'wipe-active');
+
+    setTimeout(function () {
+      if (prevEl) {
+        prevEl.classList.remove('is-scene-leave-fwd', 'is-scene-leave-back');
+        prevEl.setAttribute('aria-hidden', 'true');
+      }
+      setActiveScene(idx);
+      nextEl.classList.add(goingForward ? 'is-scene-enter-fwd' : 'is-scene-enter-back');
+      enterScene(idx);
+
+      setTimeout(function () {
+        document.body.classList.remove('wipe-active', 'wipe-fwd', 'wipe-back');
+      }, 280);
+
+      setTimeout(function () {
+        nextEl.classList.remove('is-scene-enter-fwd', 'is-scene-enter-back');
+        document.body.classList.remove('is-scene-transitioning');
+        state.sceneBusy = false;
+      }, SCENE_ENTER_MS);
+    }, SCENE_LEAVE_MS);
+  }
+
+  /** Show only the active content scene (presentation deck). */
+  function setActiveScene(idx) {
+    for (var i = 0; i < CONTENT_SCENES; i++) {
+      var el = document.getElementById(SECTION_IDS[i]);
+      if (!el) continue;
+      if (i === idx) {
+        el.classList.add('is-scene-active');
+        el.removeAttribute('aria-hidden');
+      } else {
+        el.classList.remove('is-scene-active');
+        el.setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+
+  /** One reusable leaf wipe overlay for scene changes. */
+  function ensureSceneWipe() {
+    if (document.getElementById('scene-wipe')) return;
+    var wipe = document.createElement('div');
+    wipe.id = 'scene-wipe';
+    wipe.className = 'scene-wipe';
+    wipe.setAttribute('aria-hidden', 'true');
+    var leaf = document.createElement('img');
+    leaf.src = 'assets/leaf.svg';
+    leaf.alt = '';
+    leaf.width = 96;
+    leaf.height = 96;
+    wipe.appendChild(leaf);
+    document.body.appendChild(wipe);
   }
 
   function handleKeyDown(e) {
@@ -440,12 +525,14 @@
       dom.siteControls.hidden = false;
     }
 
-    /* Begin opening sequence */
+/* Begin opening sequence */
     state.presentationActive = true;
+    document.body.classList.add('is-presenting');
     startClock();
     updateSceneIndicator();
 
     /* Enter the opening scene */
+    setActiveScene(0);
     enterScene(0);
 
     if (gateHadFocus || document.activeElement === document.body) {
@@ -579,12 +666,12 @@
   }
 
   /**
-   * Track which content section is most on-screen (by IntersectionObserver
-   * ratio) and set currentScene to that index. The surprise section is
-   * excluded — it only appears as a popup.
+   * In presentation mode scenes are swapped by class, so scroll tracking
+   * is disabled. Free-scroll / reduced-motion still uses IO below.
    */
   function setupSceneTracking() {
     if (!('IntersectionObserver' in window)) return;
+    if (document.body.classList.contains('is-presenting')) return;
 
     var thresholds = [];
     for (var t = 0; t <= 20; t++) thresholds.push(t / 20);
@@ -598,7 +685,8 @@
       for (var e = 0; e < entries.length; e++) {
         ratios[entries[e].target.id] = entries[e].intersectionRatio;
       }
-      if (!state.presentationActive || state.surpriseOpen) return;
+      if (!state.presentationActive || state.surpriseOpen || state.sceneBusy) return;
+      if (document.body.classList.contains('is-presenting')) return;
       var bestIdx = 0;
       var bestRatio = 0;
       for (var j = 0; j < CONTENT_SCENES; j++) {
@@ -808,12 +896,7 @@
     state.surpriseOpen = false;
     state.surpriseStep = 0;
     state.savingHoldUntil = 0;
-    if (state.surpriseTimers) {
-      for (var i = 0; i < state.surpriseTimers.length; i++) {
-        clearTimeout(state.surpriseTimers[i]);
-      }
-      state.surpriseTimers = [];
-    }
+    clearSurpriseTimers();
     document.body.classList.remove('surprise-open');
     if (root) {
       root.classList.remove('is-surprise-open');
@@ -829,22 +912,83 @@
   /** Advance to next surprise beat (A / Space / click while popup open). */
   function advanceSurprise() {
     if (!state.surpriseOpen) return;
-    /* Skip remaining hold on Saving... and jump ahead */
-    if (state.surpriseStep === 1 && Date.now() < state.savingHoldUntil) {
-      if (state.surpriseTimers) {
-        for (var i = 0; i < state.surpriseTimers.length; i++) {
-          clearTimeout(state.surpriseTimers[i]);
-        }
-        state.surpriseTimers = [];
-      }
+    /* During Saving hold/fade: skip straight to the announcement pop */
+    if (state.surpriseStep === 1) {
+      clearSurpriseTimers();
+      finishSavingIntoAnnouncement();
+      return;
+    }
+    if (state.surpriseStep >= 5) return;
+    showSurpriseBeat(state.surpriseStep + 1);
+  }
+
+  function clearSurpriseTimers() {
+    if (!state.surpriseTimers) return;
+    for (var i = 0; i < state.surpriseTimers.length; i++) {
+      clearTimeout(state.surpriseTimers[i]);
+    }
+    state.surpriseTimers = [];
+  }
+
+  /**
+   * Saving... → long fade → announcement pops with confetti from behind.
+   */
+  function finishSavingIntoAnnouncement() {
+    var root = document.getElementById('reveal');
+    if (!root) return;
+    var saving = $('[data-reveal-beat="1"]', root);
+    if (!saving || state.surpriseStep !== 1) {
       showSurpriseBeat(2);
       return;
     }
-    if (state.surpriseStep >= 5) {
-      /* Stay on finale; replay button handles restart */
-      return;
+
+    var fade = state.reducedMotion ? SAVING_FADE_REDUCED_MS : SAVING_FADE_MS;
+    saving.classList.add('is-saving-fade');
+    state.savingHoldUntil = Date.now() + fade;
+
+    scheduleSurprise(function () {
+      if (!state.surpriseOpen) return;
+      saving.classList.remove('is-saving-fade', 'is-surprise-current', 'is-in', 'is-armed');
+      saving.setAttribute('hidden', '');
+      showAnnouncementWithBlast();
+    }, fade);
+  }
+
+  function showAnnouncementWithBlast() {
+    var root = document.getElementById('reveal');
+    if (!root) return;
+    var beat = $('[data-reveal-beat="2"]', root);
+    if (!beat) return;
+
+    var all = $$('[data-reveal-beat]', root);
+    for (var i = 0; i < all.length; i++) {
+      all[i].classList.remove('is-in', 'is-armed', 'is-surprise-current', 'is-pop-in', 'is-saving-fade');
+      if (parseInt(all[i].getAttribute('data-reveal-beat'), 10) !== 2) {
+        all[i].setAttribute('hidden', '');
+      } else {
+        all[i].removeAttribute('hidden');
+      }
     }
-    showSurpriseBeat(state.surpriseStep + 1);
+
+    state.surpriseStep = 2;
+    state.savingHoldUntil = 0;
+
+    /* Confetti layer sits behind the dialogue card */
+    var blast = $('.reveal__blast', beat);
+    if (!blast) {
+      blast = document.createElement('div');
+      blast.className = 'reveal__blast reveal-confetti';
+      blast.setAttribute('data-confetti', '');
+      blast.setAttribute('aria-hidden', 'true');
+      beat.insertBefore(blast, beat.firstChild);
+    } else {
+      blast.textContent = '';
+    }
+
+    beat.classList.add('is-armed', 'is-in', 'is-surprise-current', 'is-pop-in');
+    sound('fanfare');
+    spawnConfetti(beat);
+    triggerAnnouncementTypewriter(beat);
   }
 
   function showSurpriseBeat(num) {
@@ -856,7 +1000,7 @@
     /* Hide prior beats; show this one full-screen in the popup */
     var all = $$('[data-reveal-beat]', root);
     for (var i = 0; i < all.length; i++) {
-      all[i].classList.remove('is-in', 'is-armed', 'is-surprise-current');
+      all[i].classList.remove('is-in', 'is-armed', 'is-surprise-current', 'is-pop-in', 'is-saving-fade');
       if (parseInt(all[i].getAttribute('data-reveal-beat'), 10) !== num) {
         all[i].setAttribute('hidden', '');
       } else {
@@ -870,10 +1014,11 @@
 
     if (num === 1) {
       var hold = state.reducedMotion ? SAVING_HOLD_REDUCED_MS : SAVING_HOLD_MS;
-      state.savingHoldUntil = Date.now() + hold;
+      /* Hold window includes the upcoming fade so skip still feels responsive */
+      state.savingHoldUntil = Date.now() + hold + (state.reducedMotion ? SAVING_FADE_REDUCED_MS : SAVING_FADE_MS);
       scheduleSurprise(function () {
         if (state.surpriseOpen && state.surpriseStep === 1) {
-          showSurpriseBeat(2);
+          finishSavingIntoAnnouncement();
         }
       }, hold);
     }
@@ -952,6 +1097,8 @@
         sound('confirm');
         break;
       case '2':
+        /* Announcement is entered via showAnnouncementWithBlast for the
+           timed sequence; keep this for manual/replay edge cases. */
         triggerAnnouncementTypewriter(el);
         break;
       case '3':
@@ -1009,7 +1156,8 @@
   function spawnConfetti(beatEl) {
     if (state.reducedMotion) return;
 
-    var container = $('.reveal__confetti', beatEl) ||
+    var container = $('.reveal__blast', beatEl) ||
+                    $('.reveal__confetti', beatEl) ||
                     $('.reveal-confetti', beatEl) ||
                     $('[data-confetti]', beatEl);
     if (!container) return;
@@ -1018,14 +1166,14 @@
     var seed = 7;
     function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
 
-    for (var i = 0; i < 60; i++) {
+    for (var i = 0; i < 72; i++) {
       var piece = document.createElement('span');
       piece.className = 'confetti-piece';
-      var d = 5 + rnd() * 5;
+      var d = 4.2 + rnd() * 4.8;
       piece.style.setProperty('--x', (rnd() * 100).toFixed(2) + '%');
       piece.style.setProperty('--duration', d.toFixed(2) + 's');
-      piece.style.setProperty('--delay', (-rnd() * d).toFixed(2) + 's');
-      piece.style.setProperty('--sway', Math.round((rnd() - 0.5) * 120) + 'px');
+      piece.style.setProperty('--delay', (-rnd() * 0.4).toFixed(2) + 's');
+      piece.style.setProperty('--sway', Math.round((rnd() - 0.5) * 140) + 'px');
       piece.setAttribute('aria-hidden', 'true');
       container.appendChild(piece);
     }
@@ -1037,24 +1185,19 @@
     var revealRoot = document.getElementById('reveal');
     if (!revealRoot) return;
 
-    if (state.surpriseTimers) {
-      for (var t = 0; t < state.surpriseTimers.length; t++) {
-        clearTimeout(state.surpriseTimers[t]);
-      }
-      state.surpriseTimers = [];
-    }
+    clearSurpriseTimers();
     state.savingHoldUntil = 0;
 
     var allBeats = $$('[data-reveal-beat]', revealRoot);
     for (var i = 0; i < allBeats.length; i++) {
-      allBeats[i].classList.remove('is-armed', 'is-in', 'is-surprise-current');
+      allBeats[i].classList.remove('is-armed', 'is-in', 'is-surprise-current', 'is-pop-in', 'is-saving-fade');
       allBeats[i].removeAttribute('hidden');
     }
 
     var achv = $('[data-reveal-beat="3"]', revealRoot);
     if (achv) achv.classList.remove('is-shake');
 
-    var confettiContainers = $$('.reveal__confetti, .reveal-confetti, [data-confetti]', revealRoot);
+    var confettiContainers = $$('.reveal__blast, .reveal__confetti, .reveal-confetti, [data-confetti]', revealRoot);
     for (var c = 0; c < confettiContainers.length; c++) {
       confettiContainers[c].textContent = '';
     }
@@ -1501,9 +1644,10 @@
     if (!dom.startGate && !state.startGateDismissed) {
       state.startGateDismissed = true;
       state.presentationActive = true;
-      document.body.classList.add('is-started');
+      document.body.classList.add('is-started', 'is-presenting');
       if (dom.siteControls) dom.siteControls.hidden = false;
       startClock();
+      setActiveScene(0);
       enterScene(0);
     }
   }

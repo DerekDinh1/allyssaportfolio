@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 160" width="420" height="160" aria-hidden="true">
+  <!-- Forearms + hands resting on desk, matching Allyssa skin (#E8B896-ish) -->
+  <defs>
+    <filter id="s" x="-20%" y="-40%" width="140%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2.2" result="b"/>
+      <feOffset dy="2" result="o"/>
+      <feFlood flood-color="#5E4022" flood-opacity=".18"/>
+      <feComposite in2="o" operator="in"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#s)">
+    <!-- left sleeve cuff -->
+    <path d="M78 18 C52 22 38 48 48 72 C58 92 86 96 108 86 L118 58 C104 48 96 28 78 18Z" fill="#FFFFFF"/>
+    <path d="M52 68 C60 86 84 90 106 82 L110 68 C90 74 68 70 52 68Z" fill="#ECE6DD"/>
+    <!-- left forearm -->
+    <path d="M108 78 C130 110 168 128 210 122 L208 98 C174 104 142 90 122 66Z" fill="#E8B896"/>
+    <path d="M122 66 C142 90 174 104 208 98 L206 108 C170 112 140 96 120 74Z" fill="#D4A07A" opacity=".55"/>
+    <!-- left hand -->
+    <ellipse cx="214" cy="118" rx="28" ry="16" fill="#E8B896"/>
+    <ellipse cx="214" cy="122" rx="22" ry="10" fill="#D4A07A" opacity=".35"/>
+    <!-- right sleeve cuff -->
+    <path d="M342 18 C368 22 382 48 372 72 C362 92 334 96 312 86 L302 58 C316 48 324 28 342 18Z" fill="#FFFFFF"/>
+    <path d="M368 68 C360 86 336 90 314 82 L310 68 C330 74 352 70 368 68Z" fill="#ECE6DD"/>
+    <!-- right forearm -->
+    <path d="M312 78 C290 110 252 128 210 122 L212 98 C246 104 278 90 298 66Z" fill="#E8B896"/>
+    <path d="M298 66 C278 90 246 104 212 98 L214 108 C250 112 280 96 300 74Z" fill="#D4A07A" opacity=".55"/>
+    <!-- right hand -->
+    <ellipse cx="206" cy="118" rx="28" ry="16" fill="#E8B896"/>
+  </g>
+</svg>

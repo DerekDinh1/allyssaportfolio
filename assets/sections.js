@@ -68,21 +68,41 @@
       var wrap = el('div', 'ac-wrap opening__wrap');
       var inner = el('div', 'opening__inner');
 
-      /* Allyssa: the user's own reference image, framed cleanly. */
-      var fig = el('figure', 'ac-portrait');
-      var frame = el('div', 'ac-portrait__frame');
-      var img = el('img', 'ac-portrait__img');
-      var src = C.get('site.portrait');
-      img.src = src || 'assets/reference/allyssa-reference.jpg';
-      img.alt = C.get('site.portraitAlt') || 'Portrait of Allyssa';
-      img.width = 400; img.height = 400;
+      /* Allyssa seated at the office desk (photo cutout + desk arms). */
+      var scene = el('div', 'opening__desk-scene');
+      scene.setAttribute('aria-hidden', 'false');
+
+      var chair = el('img', 'opening__chair');
+      chair.src = 'assets/chair.png';
+      chair.alt = '';
+      chair.setAttribute('aria-hidden', 'true');
+      chair.width = 320; chair.height = 420;
+      chair.decoding = 'async';
+      scene.appendChild(chair);
+
+      var fig = el('figure', 'opening__allyssa');
+      var img = el('img', 'opening__allyssa-img');
+      img.src = 'assets/allyssa-seated-noarms.png';
+      img.alt = C.get('site.portraitAlt') || 'Allyssa seated at her desk';
+      img.width = 136; img.height = 296;
       img.loading = 'eager';
       img.decoding = 'async';
-      frame.appendChild(img);
-      fig.appendChild(frame);
-      var cap = C.get('site.portraitCaption');
-      if (cap) fig.appendChild(el('figcaption', 'ac-portrait__cap', cap));
-      inner.appendChild(fig);
+      fig.appendChild(img);
+      scene.appendChild(fig);
+
+      var desk = el('div', 'opening__desk-lip');
+      desk.setAttribute('aria-hidden', 'true');
+      scene.appendChild(desk);
+
+      var arms = el('img', 'opening__arms');
+      arms.src = 'assets/allyssa-arms-desk.svg';
+      arms.alt = '';
+      arms.setAttribute('aria-hidden', 'true');
+      arms.width = 420; arms.height = 160;
+      arms.decoding = 'async';
+      scene.appendChild(arms);
+
+      inner.appendChild(scene);
 
       /* Announcement box */
       var boxWrap = el('div', 'opening__box');

@@ -946,10 +946,76 @@ html.is-presenting main > section {
 }
 .opening__inner {
   display: grid;
-  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
   gap: var(--sp-6);
   align-items: end;
 }
+
+/* Seated Allyssa at the office desk */
+.opening__desk-scene {
+  position: relative;
+  width: min(100%, 380px);
+  aspect-ratio: 4 / 5;
+  margin: 0;
+}
+.opening__chair {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  width: 46%;
+  transform: translateX(-48%);
+  z-index: 1;
+  filter: drop-shadow(0 10px 12px rgba(94, 64, 34, .28));
+  pointer-events: none;
+}
+.opening__allyssa {
+  position: absolute;
+  left: 50%;
+  bottom: 14%;
+  width: 58%;
+  margin: 0;
+  transform: translateX(-50%);
+  z-index: 2;
+  filter: drop-shadow(0 12px 16px rgba(94, 64, 34, .3));
+}
+.opening__allyssa-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.opening__desk-lip {
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  bottom: -2%;
+  height: 34%;
+  z-index: 3;
+  background: linear-gradient(180deg, #E0B57E 0%, #D9A96C 22%, #B98A5A 70%, #9A6E42 100%);
+  border-radius: 50% 50% 0 0 / 34% 34% 0 0;
+  box-shadow: 0 -10px 28px rgba(94, 64, 34, .2);
+  pointer-events: none;
+}
+.opening__desk-lip::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 16%;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(138, 97, 54, .4);
+}
+.opening__arms {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  width: 78%;
+  transform: translateX(-50%);
+  z-index: 4;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 6px rgba(94, 64, 34, .2));
+}
+
 .ac-portrait { margin: 0; }
 .ac-portrait__frame {
   background: var(--ac-cream);
@@ -985,7 +1051,28 @@ html.is-presenting main > section {
   font-weight: 600;
   color: var(--ac-ink);
 }
-.opening__prompt { margin-top: var(--sp-5); }
+/* Ghost Next into the wood — no bright browser-default chip */
+.opening__prompt {
+  margin-top: var(--sp-5);
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: color-mix(in srgb, var(--ac-wood) 18%, transparent);
+  color: var(--ac-ink-strong);
+  border-radius: var(--r-md);
+  padding: .55rem .9rem .55rem .7rem;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ac-wood-dark) 28%, transparent);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-soft), box-shadow var(--t-fast) var(--ease-soft);
+}
+.opening__prompt:hover,
+.opening__prompt:focus-visible {
+  background: color-mix(in srgb, var(--ac-cream) 42%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ac-leaf) 55%, transparent);
+}
+.opening__prompt .ac-key {
+  box-shadow: 0 2px 0 rgba(122, 91, 67, .22), inset 0 1px 0 rgba(255, 255, 255, .4);
+}
 
 /* ---------- 02 daily life ---------- */
 .ac-timeline {
@@ -1086,8 +1173,7 @@ html.is-presenting main > section {
   padding: clamp(var(--sp-5), 4vw, var(--sp-8));
   overflow: auto;
   display: grid;
-  align-content: center;
-  justify-items: center;
+  place-items: center;
   background: color-mix(in srgb, var(--ac-leaf) 88%, #000 12%);
   opacity: 0;
   visibility: hidden;
@@ -1114,15 +1200,31 @@ body.surprise-open {
 }
 body.surprise-open .site-controls {
   z-index: 75;
+  /* Soften controls over the green surprise so cream chip doesn't yell */
+  background: color-mix(in srgb, var(--ac-leaf-deep) 55%, transparent);
+  border-color: color-mix(in srgb, var(--ac-cream) 35%, transparent);
+  color: var(--ac-cream);
+  box-shadow: var(--sh-2);
+}
+body.surprise-open .site-controls .section-progress,
+body.surprise-open .site-controls .sound-toggle__label {
+  color: var(--ac-cream);
 }
 #reveal.reveal--popup .reveal {
   width: min(100%, 920px);
   gap: 0;
+  display: grid;
+  justify-items: center;
+  align-items: center;
+  margin-inline: auto;
 }
 #reveal.reveal--popup .reveal__stage {
+  width: min(100%, 640px);
   min-height: min(70vh, 640px);
   display: none;
   place-content: center;
+  place-items: center;
+  justify-self: center;
   opacity: 1;
   transform: none;
 }
@@ -1132,16 +1234,174 @@ body.surprise-open .site-controls {
 #reveal.reveal--popup .reveal__saving {
   width: min(100%, 560px);
   min-height: 280px;
+  margin-inline: auto;
   display: grid;
   place-content: center;
+  place-items: center;
+  text-align: center;
+  justify-self: center;
   animation: saving-pulse 1.4s var(--ease-soft) infinite;
+  transition: opacity 3.4s var(--ease-soft), transform 3.4s var(--ease-soft), filter 3.4s var(--ease-soft);
+}
+#reveal.reveal--popup .reveal__saving.is-saving-fade {
+  animation: none;
+  opacity: 0;
+  transform: scale(.92);
+  filter: blur(4px);
+  pointer-events: none;
+}
+#reveal.reveal--popup .reveal__announce {
+  position: relative;
+  overflow: visible;
+}
+#reveal.reveal--popup .reveal__blast {
+  position: absolute;
+  inset: -20% -10% -30%;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+#reveal.reveal--popup .reveal__announce .ac-box,
+#reveal.reveal--popup .reveal__announce .reveal__detail,
+#reveal.reveal--popup .reveal__announce .ac-next {
+  position: relative;
+  z-index: 2;
+}
+#reveal.reveal--popup .reveal__announce.is-pop-in .ac-box {
+  animation: surprise-pop 0.85s var(--ease-bounce) both;
+}
+@keyframes surprise-pop {
+  0% { opacity: 0; transform: scale(.72) translateY(28px); }
+  55% { opacity: 1; transform: scale(1.06) translateY(-4px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 @keyframes saving-pulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.02); }
 }
 @media (prefers-reduced-motion: reduce) {
-  #reveal.reveal--popup .reveal__saving { animation: none; }
+  #reveal.reveal--popup .reveal__saving { animation: none; transition-duration: .01ms; }
+  #reveal.reveal--popup .reveal__announce.is-pop-in .ac-box { animation: none; }
+}
+
+/* ---------- Game-style scene wipes (presentation) ---------- */
+body.is-presenting {
+  overflow: hidden;
+  height: 100svh;
+}
+body.is-presenting main {
+  position: relative;
+  height: 100svh;
+  overflow: hidden;
+}
+body.is-presenting .scene {
+  position: absolute;
+  inset: 0;
+  min-height: 100svh;
+  height: 100svh;
+  overflow: auto;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+body.is-presenting .scene.is-scene-active,
+body.is-presenting .scene.is-scene-leave-fwd,
+body.is-presenting .scene.is-scene-leave-back,
+body.is-presenting .scene.is-scene-enter-fwd,
+body.is-presenting .scene.is-scene-enter-back {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  z-index: 1;
+}
+body.is-presenting .scene.is-scene-leave-fwd,
+body.is-presenting .scene.is-scene-leave-back {
+  z-index: 2;
+}
+.scene-wipe {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  background: var(--ac-leaf);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(1.15);
+}
+body.wipe-active .scene-wipe {
+  visibility: visible;
+  animation: scene-wipe-flash 0.55s var(--ease-soft) both;
+}
+.scene-wipe img {
+  width: clamp(72px, 12vw, 120px);
+  height: auto;
+  filter: drop-shadow(0 8px 16px rgba(62, 90, 40, .35));
+  animation: scene-wipe-spin 0.55s var(--ease-bounce) both;
+}
+@keyframes scene-wipe-flash {
+  0% { opacity: 0; transform: scale(1.2); }
+  35% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(.92); }
+}
+@keyframes scene-wipe-spin {
+  0% { transform: rotate(-28deg) scale(.6); opacity: 0; }
+  40% { transform: rotate(8deg) scale(1.08); opacity: 1; }
+  100% { transform: rotate(18deg) scale(.9); opacity: 0; }
+}
+.scene.is-scene-leave-fwd {
+  animation: scene-leave-fwd 0.42s var(--ease-soft) both;
+}
+.scene.is-scene-leave-back {
+  animation: scene-leave-back 0.42s var(--ease-soft) both;
+}
+.scene.is-scene-enter-fwd {
+  animation: scene-enter-fwd 0.72s var(--ease-bounce) both;
+}
+.scene.is-scene-enter-back {
+  animation: scene-enter-back 0.72s var(--ease-bounce) both;
+}
+@keyframes scene-leave-fwd {
+  to { opacity: 0; transform: scale(.94) translateY(18px); filter: blur(2px); }
+}
+@keyframes scene-leave-back {
+  to { opacity: 0; transform: scale(.94) translateY(-18px); filter: blur(2px); }
+}
+@keyframes scene-enter-fwd {
+  0% { opacity: 0; transform: scale(1.05) translateY(-22px); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes scene-enter-back {
+  0% { opacity: 0; transform: scale(1.05) translateY(22px); }
+  100% { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-wipe,
+  .scene.is-scene-leave-fwd,
+  .scene.is-scene-leave-back,
+  .scene.is-scene-enter-fwd,
+  .scene.is-scene-enter-back {
+    animation: none !important;
+  }
+  body.is-presenting {
+    overflow: auto;
+    height: auto;
+  }
+  body.is-presenting main {
+    height: auto;
+    overflow: visible;
+  }
+  body.is-presenting .scene {
+    position: relative;
+    inset: auto;
+    height: auto;
+    min-height: 100svh;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
 }
 
 .reveal__stage {
