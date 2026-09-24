@@ -1,12 +1,10 @@
 {
   "site": {
     "title": "Allyssa's Island",
-    "tagline": "",
     "name": "Allyssa",
     "son": "Keone",
     "portrait": "assets/reference/allyssa-reference.jpg",
-    "portraitAlt": "Allyssa's character portrait",
-    "editUrl": ""
+    "portraitAlt": "Allyssa's character portrait"
   },
   "ui": {
     "startPrompt": "Press A to start",
@@ -35,51 +33,77 @@
   },
   "dailyLife": {
     "title": "A Day in the Life",
-    "subtitle": "",
     "entries": [
-      { "time": "", "title": "", "detail": "" },
-      { "time": "", "title": "", "detail": "" },
-      { "time": "", "title": "", "detail": "" },
-      { "time": "", "title": "", "detail": "" },
-      { "time": "", "title": "", "detail": "" },
-      { "time": "", "title": "", "detail": "" },
-      { "time": "", "title": "", "detail": "" },
-      { "time": "", "title": "", "detail": "" }
+      {
+        "time": "7:30AM ",
+        "title": "Wake Up Sleepy Head",
+        "detail": "Keo wakes up around 7-7:30am every morning. My thoughtful husband gets him ready in the morning so I can sleep in for a little. <3 "
+      },
+      {
+        "time": "9:00AM",
+        "title": "Breakfast Time!",
+        "detail": "After his morning milk, we will make breakfast for Keo. That will consist of either eggs,cereal,yogurt, banana, or a combination. "
+      },
+      {
+        "time": "10:00AM",
+        "title": "Morning Walk",
+        "detail": "After helping us feed the pups and fill their dog bowls, we go for our morning walk."
+      },
+      {
+        "time": "11:00AM-12:00PM",
+        "title": "Play Time",
+        "detail": "Keo loves blocks right now. I help make sure they don't fall (unless he knocks them down himself) "
+      },
+      {
+        "time": "12:00PM-1:00PM",
+        "title": "Lunch",
+        "detail": "We join Derek on his lunch break! After lunch we go for another walk."
+      },
+      {
+        "time": "2:00PM-4:00PM",
+        "title": "Nap Time!",
+        "detail": "Nap Time = Me Timeeeeee. Which consists of doomscrolling, true crime docs, and drawing ^.^"
+      },
+      {
+        "time": "5:00PM-7:00PM",
+        "title": "Dinner/Evening Walk/Bed Time Routine"
+      },
+      {
+        "time": "8:00PM",
+        "title": "Night Night",
+        "detail": "We read two books to Keo before bed. ( he only lets derek read to him ). lol"
+      }
     ]
   },
   "stats": {
     "title": "Resident Stats",
-    "subtitle": "",
     "items": [
-      { "label": "", "value": "" },
-      { "label": "", "value": "" },
-      { "label": "", "value": "" },
-      { "label": "", "value": "" },
-      { "label": "", "value": "" },
-      { "label": "", "value": "" },
-      { "label": "", "value": "" },
-      { "label": "", "value": "" }
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {}
     ]
   },
   "gallery": {
     "title": "Little Moments",
-    "subtitle": "",
     "photos": [
-      { "image": "", "alt": "", "caption": "", "tag": "" },
-      { "image": "", "alt": "", "caption": "", "tag": "" },
-      { "image": "", "alt": "", "caption": "", "tag": "" },
-      { "image": "", "alt": "", "caption": "", "tag": "" },
-      { "image": "", "alt": "", "caption": "", "tag": "" },
-      { "image": "", "alt": "", "caption": "", "tag": "" },
-      { "image": "", "alt": "", "caption": "", "tag": "" },
-      { "image": "", "alt": "", "caption": "", "tag": "" }
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {}
     ]
   },
   "reveal": {
     "years": "2",
     "startDate": "October 4th",
-    "jobTitle": "",
-    "employer": "",
     "saving": {
       "title": "Saving...",
       "note": "Do not turn off the power.",
@@ -106,7 +130,6 @@
         "My first day is {startDate}."
       ],
       "signature": "{name}",
-      "ps": "",
       "calendarLabel": "First day"
     },
     "finale": {
