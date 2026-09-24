@@ -238,8 +238,7 @@ main > section,
 
 /* ---------- Persistent presentation controls ---------- */
 
-.site-controls,
-.presentation-nav {
+.site-controls {
   position: fixed;
   right: var(--sp-4);
   bottom: var(--sp-4);
@@ -254,8 +253,188 @@ main > section,
   box-shadow: var(--sh-2);
 }
 
+/* Collapsible scene nav — bottom-left, cozy ACNH chip */
+.presentation-nav {
+  position: fixed;
+  left: var(--sp-4);
+  bottom: var(--sp-4);
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  max-width: min(16rem, calc(100vw - (2 * var(--sp-4))));
+}
+
+.presentation-nav__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 2px solid var(--ac-cream-edge);
+  border-radius: var(--r-pill);
+  background: var(--ac-cream);
+  color: var(--ac-ink-strong);
+  box-shadow: var(--sh-1);
+  font-family: var(--ac-font-ui);
+  font-size: var(--ac-fs-small);
+  font-weight: 800;
+  letter-spacing: .06em;
+  cursor: pointer;
+  transition: transform var(--t-fast) var(--ease-bounce),
+              box-shadow var(--t-fast) var(--ease-soft);
+}
+
+.presentation-nav__toggle:hover,
+.presentation-nav__toggle:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: var(--sh-2);
+}
+
+.presentation-nav.is-open .presentation-nav__toggle {
+  background: var(--ac-chip);
+  border-color: color-mix(in srgb, var(--ac-leaf-deep) 35%, var(--ac-cream-edge));
+}
+
+.presentation-nav__leaf {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+}
+
+.presentation-nav__chip-num {
+  min-width: 1.6ch;
+  text-align: center;
+}
+
+.presentation-nav__panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: min(100%, 14rem);
+  padding: var(--sp-3);
+  border: 2px solid var(--ac-wood);
+  border-radius: var(--r-md);
+  background: var(--ac-cream);
+  box-shadow: var(--sh-2);
+}
+
+.presentation-nav__panel[hidden] {
+  display: none !important;
+}
+
+.presentation-nav__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--ac-cream-deep);
+  color: var(--ac-ink-strong);
+  box-shadow: var(--sh-1);
+  font-family: var(--ac-font-ui);
+  font-size: var(--ac-fs-small);
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform var(--t-fast) var(--ease-bounce),
+              opacity var(--t-fast) var(--ease-soft);
+}
+
+.presentation-nav__back:hover:not(:disabled),
+.presentation-nav__back:focus-visible:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.presentation-nav__back:disabled {
+  opacity: .38;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.presentation-nav__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.presentation-nav__item {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 2px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ac-ink);
+  font-family: var(--ac-font-ui);
+  font-size: var(--ac-fs-small);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-soft),
+              border-color var(--t-fast) var(--ease-soft),
+              color var(--t-fast) var(--ease-soft);
+}
+
+.presentation-nav__item:hover,
+.presentation-nav__item:focus-visible {
+  background: var(--ac-cream-deep);
+  border-color: var(--ac-cream-edge);
+}
+
+.presentation-nav__item.is-current {
+  background: color-mix(in srgb, var(--ac-leaf) 22%, var(--ac-cream));
+  border-color: color-mix(in srgb, var(--ac-leaf-deep) 45%, var(--ac-cream-edge));
+  color: var(--ac-ink-strong);
+  font-weight: 800;
+}
+
+.presentation-nav__item.is-current::before {
+  content: '';
+  display: inline-block;
+  width: .55rem;
+  height: .55rem;
+  margin-right: var(--sp-2);
+  border-radius: 50%;
+  background: var(--ac-leaf-deep);
+  vertical-align: middle;
+}
+
+body.is-started .presentation-nav__toggle {
+  background: color-mix(in srgb, var(--ac-cream) 92%, transparent);
+  opacity: .28;
+  transition: opacity 0.35s var(--ease-soft),
+              transform var(--t-fast) var(--ease-bounce),
+              box-shadow var(--t-fast) var(--ease-soft),
+              background var(--t-fast) var(--ease-soft);
+}
+
+body.is-started .presentation-nav:hover .presentation-nav__toggle,
+body.is-started .presentation-nav:focus-within .presentation-nav__toggle,
+body.is-started .presentation-nav.is-open .presentation-nav__toggle {
+  opacity: 1;
+}
+
+body.is-started .site-controls {
+  opacity: .28;
+  transition: opacity 0.35s var(--ease-soft);
+}
+
+body.is-started .site-controls:hover,
+body.is-started .site-controls:focus-within {
+  opacity: 1;
+}
+
 .site-controls button,
-.presentation-nav button,
 .sound-toggle {
   min-width: 44px;
   min-height: 44px;
@@ -271,7 +450,6 @@ main > section,
 }
 
 .site-controls button:hover,
-.presentation-nav button:hover,
 .sound-toggle:hover {
   transform: translateY(-2px);
 }
@@ -762,8 +940,7 @@ html.is-presenting main > section {
     margin-top: 0;
   }
 
-  .site-controls,
-  .presentation-nav {
+  .site-controls {
     right: 50%;
     transform: translateX(50%);
   }
@@ -806,8 +983,13 @@ html.is-presenting main > section {
     transform: none;
   }
 
-  .site-controls,
+  .site-controls {
+    bottom: var(--sp-2);
+    max-width: calc(100vw - (2 * var(--sp-2)));
+  }
+
   .presentation-nav {
+    left: var(--sp-2);
     bottom: var(--sp-2);
     max-width: calc(100vw - (2 * var(--sp-2)));
   }
@@ -819,10 +1001,14 @@ html.is-presenting main > section {
     width: calc(100% - (2 * var(--sp-4)));
   }
 
-  .site-controls,
-  .presentation-nav {
+  .site-controls {
     gap: var(--sp-1);
     padding: var(--sp-1);
+  }
+
+  .presentation-nav__toggle {
+    padding: var(--sp-2);
+    gap: var(--sp-1);
   }
 
   .section-progress,
@@ -866,7 +1052,9 @@ html.is-presenting main > section {
   .start-gate__button,
   .start-overlay__button,
   .site-controls button:hover,
-  .presentation-nav button:hover,
+  .presentation-nav__toggle:hover,
+  .presentation-nav__back:hover,
+  .presentation-nav__item:hover,
   .sound-toggle:hover,
   .js .reveal-on-scroll,
   .reveal-letter,
@@ -1635,14 +1823,14 @@ body.is-started .scene--reveal {
   transform: translateY(-1px);
 }
 
-/* Quieter presentation chrome — sits in the scene, doesn't fight it */
+/* Quieter presentation chrome — faded until hover */
 body.is-started .site-controls {
   background: color-mix(in srgb, var(--ac-cream) 55%, transparent);
   box-shadow: var(--sh-1);
   border: 2px solid color-mix(in srgb, var(--ac-cream-edge) 55%, transparent);
   backdrop-filter: blur(6px);
-  opacity: .78;
-  transition: opacity var(--t-fast) var(--ease-soft),
+  opacity: .28;
+  transition: opacity 0.35s var(--ease-soft),
               top var(--t-mid) var(--ease-soft),
               bottom var(--t-mid) var(--ease-soft);
 }
@@ -1682,40 +1870,65 @@ body.is-started .section-progress {
 .mail-interrupt.is-on {
   pointer-events: auto;
 }
+.mail-interrupt__path-def {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  visibility: hidden;
+}
 .mail-interrupt__plane {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: clamp(72px, 14vw, 110px);
-  height: clamp(72px, 14vw, 110px);
+  left: 0;
+  top: 0;
+  width: clamp(120px, 22vw, 180px);
+  height: clamp(65px, 12vw, 97px);
   padding: 0;
   margin: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
-  transform: translate(-50%, -50%);
-  filter: drop-shadow(0 10px 18px rgba(74, 107, 58, 0.35));
+  filter: drop-shadow(0 12px 16px rgba(74, 107, 58, 0.28));
   pointer-events: none; /* until landed */
   -webkit-tap-highlight-color: transparent;
+  transform: translate(-50%, -50%);
+  will-change: left, top, transform, opacity;
 }
-.mail-interrupt.is-on.is-landed .mail-interrupt__plane {
-  pointer-events: auto;
-  animation: mail-bob 1.6s ease-in-out infinite;
-}
-.mail-interrupt.is-on:not(.is-landed) .mail-interrupt__plane {
-  animation: mail-fly-loop 3.2s cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
-  will-change: transform, opacity;
-}
-.mail-interrupt__svg {
+.mail-interrupt__craft {
   display: block;
   width: 100%;
   height: 100%;
-  overflow: visible;
+  transform-origin: 50% 50%;
+}
+.mail-interrupt__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.mail-interrupt.is-on.is-landed .mail-interrupt__plane {
+  left: 50%;
+  top: 50%;
+  /* Face left, right-side up, slight nose-up — JS transform usually overrides */
+  transform: translate(-50%, -50%) scaleX(-1) rotate(-6deg);
+  pointer-events: auto;
+  opacity: 1;
+}
+.mail-interrupt.is-on.is-landed .mail-interrupt__craft {
+  animation: mail-bob 2.4s ease-in-out infinite;
+}
+.mail-interrupt.is-on:not(.is-landed) .mail-interrupt__plane {
+  opacity: 0;
 }
 .mail-interrupt__hint {
   position: absolute;
   left: 50%;
-  top: calc(50% + clamp(56px, 11vw, 84px));
+  top: calc(50% + clamp(48px, 10vw, 72px));
   transform: translateX(-50%);
   margin: 0;
   padding: 0.45em 1.1em;
@@ -1732,70 +1945,25 @@ body.is-started .section-progress {
 }
 .mail-interrupt.is-landed .mail-interrupt__hint {
   opacity: 1;
-  transition: opacity 0.45s ease;
+  transition: opacity 0.5s ease;
 }
 .mail-interrupt__plane:focus-visible {
   outline: 3px solid var(--ac-leaf);
-  outline-offset: 6px;
+  outline-offset: 8px;
   border-radius: 50%;
 }
-.mail-interrupt__plane:hover .mail-interrupt__svg,
-.mail-interrupt__plane:focus-visible .mail-interrupt__svg {
-  transform: scale(1.06) rotate(-6deg);
-  transition: transform 0.25s ease;
+.mail-interrupt.is-landed .mail-interrupt__plane:hover .mail-interrupt__craft,
+.mail-interrupt.is-landed .mail-interrupt__plane:focus-visible .mail-interrupt__craft {
+  transform: scale(1.06);
+  transition: transform 0.28s ease;
 }
 
-/* Enter → one smooth loop around center → ease into soft landing */
-@keyframes mail-fly-loop {
-  0% {
-    transform: translate(calc(-50% + 58vw), calc(-50% - 42vh)) rotate(-35deg) scale(0.65);
-    opacity: 0;
-  }
-  6% {
-    opacity: 1;
-  }
-  22% {
-    /* glide in toward stage */
-    transform: translate(calc(-50% + 26vw), calc(-50% - 6vh)) rotate(25deg) scale(0.88);
-  }
-  32% {
-    /* enter loop from the right */
-    transform: translate(calc(-50% + 20vw), calc(-50% + 2vh)) rotate(70deg) scale(0.96);
-  }
-  42% {
-    /* loop top */
-    transform: translate(calc(-50% + 2vw), calc(-50% - 18vh)) rotate(160deg) scale(1.02);
-  }
-  52% {
-    /* loop left */
-    transform: translate(calc(-50% - 20vw), calc(-50% + 1vh)) rotate(250deg) scale(1);
-  }
-  62% {
-    /* loop bottom */
-    transform: translate(calc(-50% + 1vw), calc(-50% + 16vh)) rotate(340deg) scale(1);
-  }
-  72% {
-    /* finish loop, heading home */
-    transform: translate(calc(-50% + 12vw), calc(-50% - 2vh)) rotate(400deg) scale(1);
-  }
-  84% {
-    /* soft settle approach */
-    transform: translate(calc(-50% + 3vw), calc(-50% - 1.5vh)) rotate(-8deg) scale(1.03);
-  }
-  94% {
-    transform: translate(calc(-50% + 0.5vw), calc(-50% - 0.4vh)) rotate(-18deg) scale(1.01);
-  }
-  100% {
-    transform: translate(-50%, -50%) rotate(-22deg) scale(1);
-    opacity: 1;
-  }
-}
 @keyframes mail-bob {
   0%, 100% {
-    transform: translate(-50%, -50%) rotate(-22deg);
+    transform: translateY(0);
   }
   50% {
-    transform: translate(-50%, calc(-50% - 8px)) rotate(-16deg);
+    transform: translateY(-6px);
   }
 }
 
@@ -1811,9 +1979,14 @@ body.is-started .section-progress {
   .scene-wipe__leaf { animation: none !important; }
   .mail-interrupt.is-on:not(.is-landed) .mail-interrupt__plane,
   .mail-interrupt.is-on.is-landed .mail-interrupt__plane {
-    animation: none !important;
-    transform: translate(-50%, -50%) rotate(-28deg);
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(-12deg);
     opacity: 1;
+  }
+  .mail-interrupt.is-on .mail-interrupt__craft {
+    animation: none !important;
+    transform: none;
   }
 }
 

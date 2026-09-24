@@ -13,8 +13,8 @@
 
 <link rel="icon" href="assets/leaf.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/tokens.css">
-<link rel="stylesheet" href="assets/base.css">
-<link rel="stylesheet" href="assets/site.css">
+<link rel="stylesheet" href="assets/base.css?v=mail10">
+<link rel="stylesheet" href="assets/site.css?v=mail10">
 </head>
 <body>
 
@@ -39,6 +39,22 @@
   </button>
   <p class="start-gate__hint" data-content="ui.startHint"></p>
 </div>
+
+<!-- ============ collapsible scene nav (bottom-left) ============ -->
+<nav class="presentation-nav" id="presentation-nav" hidden aria-label="Scene navigation">
+  <button type="button" class="presentation-nav__toggle" aria-expanded="false" aria-controls="presentation-nav-panel">
+    <img class="presentation-nav__leaf" src="assets/leaf.svg" alt="" width="22" height="22" aria-hidden="true">
+    <span class="presentation-nav__chip-num" aria-hidden="true">01</span>
+    <span class="presentation-nav__toggle-sr ac-sr">Open scene menu</span>
+  </button>
+  <div class="presentation-nav__panel" id="presentation-nav-panel" hidden>
+    <button type="button" class="presentation-nav__back" disabled>
+      <span class="ac-key ac-key--b" aria-hidden="true">B</span>
+      <span>Back</span>
+    </button>
+    <ul class="presentation-nav__list" role="list"></ul>
+  </div>
+</nav>
 
 <!-- ============ presentation controls ============ -->
 <div class="site-controls" hidden>
@@ -74,14 +90,14 @@
 
 <!-- Mail interrupt: paper plane flies in after Saving; click opens announcement -->
 <div class="mail-interrupt" id="mail-interrupt" hidden aria-hidden="true">
+  <svg class="mail-interrupt__path-def" aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none" focusable="false">
+    <path id="mail-flight-path" fill="none" d="M 122.00 52.00 C 120.33 51.00, 115.33 45.00, 112.00 46.00 C 108.67 47.00, 105.33 58.33, 102.00 58.00 C 98.67 57.67, 95.33 44.33, 92.00 44.00 C 88.67 43.67, 85.33 55.67, 82.00 56.00 C 78.67 56.33, 75.00 46.33, 72.00 46.00 C 69.00 45.67, 66.33 53.33, 64.00 54.00 C 61.67 54.67, 59.67 50.58, 58.00 50.00 C 56.33 49.42, 55.08 50.50, 54.00 50.50 C 52.92 50.50, 52.17 50.08, 51.50 50.00 C 50.83 49.92, 50.25 50.00, 50.00 50.00"/>
+  </svg>
   <button type="button" class="mail-interrupt__plane" data-mail-open aria-label="Open island news">
-    <svg class="mail-interrupt__svg" viewBox="0 0 64 64" width="88" height="88" aria-hidden="true" focusable="false">
-      <path fill="#FBF6E0" stroke="#7A5B43" stroke-width="2.2" stroke-linejoin="round"
-        d="M6 30 L58 10 L34 54 L28 36 Z"/>
-      <path fill="none" stroke="#7A5B43" stroke-width="2" stroke-linecap="round"
-        d="M28 36 L58 10 M28 36 L22 42"/>
-      <path fill="#E8A0B5" opacity=".85" d="M28 36 L34 54 L22 42 Z"/>
-    </svg>
+    <span class="mail-interrupt__craft" aria-hidden="true">
+      <!-- Nose +x (right). Leftward flight = scaleX(-1) so shaded top stays up (no 180° roll). -->
+      <img class="mail-interrupt__img" src="assets/paper-plane.png" alt="" width="160" height="86" draggable="false">
+    </span>
   </button>
   <p class="mail-interrupt__hint" data-mail-hint hidden>Tap the letter!</p>
 </div>
@@ -116,7 +132,7 @@
 
 <script src="assets/content.js"></script>
 <script src="assets/sections.js"></script>
-<script src="assets/audio.js?v=mail2"></script>
-<script src="assets/app.js?v=mail2"></script>
+<script src="assets/audio.js?v=mail10"></script>
+<script src="assets/app.js?v=mail10"></script>
 </body>
 </html>

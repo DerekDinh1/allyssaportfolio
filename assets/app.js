@@ -30,6 +30,7 @@
 
   var SECTION_IDS = ['opening', 'daily', 'stats', 'gallery', 'reveal'];
   var TOTAL_SECTIONS = SECTION_IDS.length;
+  var SECTION_NAV_FALLBACKS = ['Morning', 'Daily', 'Stats', 'Gallery', 'News'];
   var CLOCK_INTERVAL_MS = 10000;   // update live clock every 10 s
   var SAVING_HOLD_MS = 5000;       // Saving stays fully visible
   var SAVING_FADE_MS = 3400;       // then slow fade before surprise
@@ -50,9 +51,12 @@
     savingTimer: null,
     mailInterruptOpen: false,
     mailLandTimer: null,
+    mailFlightRaf: null,
     surpriseOpened: false,
     surpriseBeatIndex: 0,
-    surpriseBeats: []
+    surpriseBeats: [],
+    navOpen: false,
+    navLabels: SECTION_NAV_FALLBACKS.slice()
   };
 
   /* ================================================================
@@ -290,11 +294,186 @@
 
   function updateSceneIndicator() {
     var idx = state.currentScene;
-    var el = dom.sceneProgress;
-    if (!el) return;
     var num = String(idx + 1);
-    el.innerHTML = (num.length === 1 ? '0' + num : num) +
-                   ' <small>/ ' + (TOTAL_SECTIONS < 10 ? '0' + TOTAL_SECTIONS : TOTAL_SECTIONS) + '</small>';
+    var padded = num.length === 1 ? '0' + num : num;
+    var el = dom.sceneProgress;
+    if (el) {
+      el.innerHTML = padded +
+                     ' <small>/ ' + (TOTAL_SECTIONS < 10 ? '0' + TOTAL_SECTIONS : TOTAL_SECTIONS) + '</small>';
+    }
+    if (dom.navChipNum) dom.navChipNum.textContent = padded;
+    updatePresentationNav();
+  }
+
+  /** Short scene labels for the collapsible nav (content-aware). */
+  function deriveNavLabels(data) {
+    var labels = SECTION_NAV_FALLBACKS.slice();
+    data = data || state.data || {};
+    var C = window.ACContent;
+
+    if (data.opening && data.opening.title && String(data.opening.title).trim()) {
+      labels[0] = String(data.opening.title).trim();
+    }
+
+    if (data.dailyLife && data.dailyLife.title && String(data.dailyLife.title).trim()) {
+      labels[1] = 'Daily';
+    }
+
+    if (data.stats && data.stats.title && String(data.stats.title).trim()) {
+      var st = String(data.stats.title).trim();
+      labels[2] = st.length <= 12 ? st : 'Stats';
+    }
+
+    if (data.gallery && data.gallery.title && String(data.gallery.title).trim()) {
+      labels[3] = 'Gallery';
+    }
+
+    if (data.reveal && data.reveal.announcement && data.reveal.announcement.badge) {
+      var badge = String(data.reveal.announcement.badge).trim();
+      if (/news/i.test(badge)) labels[4] = 'News';
+      else if (badge.length <= 12) labels[4] = badge.replace(/[!]+/g, '').trim();
+    }
+
+    if (C && typeof C.get === 'function') {
+      if (!C.isBlank(C.get('opening.title'))) labels[0] = String(C.get('opening.title')).trim();
+      if (!C.isBlank(C.get('dailyLife.title'))) labels[1] = 'Daily';
+      if (!C.isBlank(C.get('stats.title'))) {
+        var statsTitle = String(C.get('stats.title')).trim();
+        labels[2] = statsTitle.length <= 12 ? statsTitle : 'Stats';
+      }
+      if (!C.isBlank(C.get('gallery.title'))) labels[3] = 'Gallery';
+      if (!C.isBlank(C.get('reveal.announcement.badge'))) {
+        var rvBadge = String(C.get('reveal.announcement.badge')).trim();
+        if (/news/i.test(rvBadge)) labels[4] = 'News';
+        else if (rvBadge.length <= 12) labels[4] = rvBadge.replace(/[!]+/g, '').trim();
+      }
+    }
+
+    return labels;
+  }
+
+  function setPresentationNavOpen(open) {
+    var nav = dom.presentationNav;
+    var panel = dom.navPanel;
+    var toggle = dom.navToggle;
+    if (!nav || !panel || !toggle) return;
+
+    state.navOpen = !!open;
+    nav.classList.toggle('is-open', state.navOpen);
+    toggle.setAttribute('aria-expanded', state.navOpen ? 'true' : 'false');
+    panel.hidden = !state.navOpen;
+    if (dom.navToggleSr) {
+      dom.navToggleSr.textContent = state.navOpen ? 'Close scene menu' : 'Open scene menu';
+    }
+
+    if (state.navOpen) {
+      var focusTarget = (state.currentScene > 0 && dom.navBack && !dom.navBack.disabled)
+        ? dom.navBack
+        : (dom.navItems && dom.navItems[state.currentScene]) || toggle;
+      if (focusTarget) {
+        try { focusTarget.focus({ preventScroll: true }); } catch (e) { focusTarget.focus(); }
+      }
+    }
+  }
+
+  function closePresentationNav() {
+    if (!state.navOpen) return;
+    setPresentationNavOpen(false);
+  }
+
+  function togglePresentationNav() {
+    setPresentationNavOpen(!state.navOpen);
+    if (!state.navOpen && dom.navToggle) dom.navToggle.focus({ preventScroll: true });
+  }
+
+  function updatePresentationNav() {
+    if (!dom.presentationNav) return;
+    var idx = state.currentScene;
+
+    if (dom.navBack) {
+      var onFirst = idx <= 0;
+      dom.navBack.disabled = onFirst;
+      dom.navBack.hidden = onFirst;
+      dom.navBack.setAttribute('aria-label', onFirst ? '' : 'Go to previous scene');
+    }
+
+    if (dom.navItems) {
+      for (var i = 0; i < dom.navItems.length; i++) {
+        var btn = dom.navItems[i];
+        if (!btn) continue;
+        var isCurrent = i === idx;
+        btn.classList.toggle('is-current', isCurrent);
+        btn.setAttribute('aria-current', isCurrent ? 'true' : 'false');
+      }
+    }
+  }
+
+  function buildPresentationNavList() {
+    if (!dom.navList) return;
+    dom.navList.innerHTML = '';
+    dom.navItems = [];
+    var labels = state.navLabels || SECTION_NAV_FALLBACKS;
+
+    for (var i = 0; i < TOTAL_SECTIONS; i++) {
+      var li = document.createElement('li');
+      var item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'presentation-nav__item';
+      item.setAttribute('data-scene', String(i));
+      item.textContent = labels[i] || SECTION_NAV_FALLBACKS[i] || ('Scene ' + (i + 1));
+      item.setAttribute('aria-label', 'Go to ' + item.textContent);
+      dom.navItems.push(item);
+      li.appendChild(item);
+      dom.navList.appendChild(li);
+    }
+  }
+
+  function setupPresentationNav() {
+    dom.presentationNav = document.getElementById('presentation-nav');
+    dom.navToggle = $('.presentation-nav__toggle');
+    dom.navPanel = document.getElementById('presentation-nav-panel');
+    dom.navBack = $('.presentation-nav__back');
+    dom.navList = $('.presentation-nav__list');
+    dom.navChipNum = $('.presentation-nav__chip-num');
+    dom.navToggleSr = $('.presentation-nav__toggle-sr');
+    dom.navItems = [];
+
+    if (!dom.presentationNav || !dom.navToggle || !dom.navPanel) return;
+
+    state.navLabels = deriveNavLabels(state.data);
+    buildPresentationNavList();
+    updatePresentationNav();
+
+    dom.navToggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      sound('select');
+      togglePresentationNav();
+    });
+
+    if (dom.navBack) {
+      dom.navBack.addEventListener('click', function () {
+        if (state.currentScene <= 0) return;
+        sound('select');
+        closePresentationNav();
+        goToScene(state.currentScene - 1);
+      });
+    }
+
+    dom.navList.addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-scene]');
+      if (!btn || !dom.navList.contains(btn)) return;
+      var idx = parseInt(btn.getAttribute('data-scene'), 10);
+      if (isNaN(idx) || idx < 0 || idx >= TOTAL_SECTIONS) return;
+      sound('select');
+      closePresentationNav();
+      goToScene(idx);
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!state.navOpen || !dom.presentationNav) return;
+      if (dom.presentationNav.contains(e.target)) return;
+      closePresentationNav();
+    });
   }
 
   /** Toggle .is-active on scene sections (presentation deck). */
@@ -435,6 +614,16 @@
 
     if (isTextField) return;
 
+    if (key === 'Escape' || code === 'Escape') {
+      if (state.navOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        closePresentationNav();
+        if (dom.navToggle) dom.navToggle.focus({ preventScroll: true });
+      }
+      return;
+    }
+
     /* X / Y mute — matches on-screen sound toggle chip */
     if (code === 'KeyX' || key === 'x' || key === 'X' ||
         code === 'KeyY' || key === 'y' || key === 'Y') {
@@ -453,16 +642,20 @@
     }
 
     if (code === 'ArrowLeft' || key === 'ArrowLeft' ||
-        code === 'PageUp' || key === 'PageUp') {
+        code === 'PageUp' || key === 'PageUp' ||
+        code === 'KeyB' || key === 'b' || key === 'B') {
       e.preventDefault();
-      if (!state.surpriseOpened && state.currentScene > 0) scrollToScene(state.currentScene - 1);
+      if (!state.surpriseOpened && !state.mailInterruptOpen && state.currentScene > 0) {
+        closePresentationNav();
+        scrollToScene(state.currentScene - 1);
+      }
       return;
     }
 
     if (isAdvanceKey(e)) {
       /* Focused mute / edit controls must not be stolen by A/Space advance */
       var ae = document.activeElement;
-      if (ae && ae.closest && ae.closest('.sound-toggle, .edit-link, .site-controls a')) {
+      if (ae && ae.closest && ae.closest('.sound-toggle, .edit-link, .site-controls a, .presentation-nav')) {
         if (ae.closest('.sound-toggle')) {
           e.preventDefault();
           e.stopPropagation();
@@ -514,10 +707,9 @@
     /* Unlock body */
     document.body.classList.add('is-started');
 
-    /* Show presentation controls */
-    if (dom.siteControls) {
-      dom.siteControls.hidden = false;
-    }
+    /* Show presentation controls + scene nav */
+    if (dom.siteControls) dom.siteControls.hidden = false;
+    if (dom.presentationNav) dom.presentationNav.hidden = false;
 
     /* Begin opening sequence */
     state.presentationActive = true;
@@ -541,7 +733,7 @@
 
   /** Make everything behind the start gate inert while it is shown. */
   function setBackgroundInert(on) {
-    var els = $$('body > header, body > main, body > footer, .site-controls');
+    var els = $$('body > header, body > main, body > footer, .site-controls, .presentation-nav');
     for (var i = 0; i < els.length; i++) {
       if (on) {
         els[i].setAttribute('inert', '');
@@ -661,6 +853,7 @@
   function enterScene(idx) {
     if (idx < 0 || idx >= TOTAL_SECTIONS) return;
     var prev = state.currentScene;
+    closePresentationNav();
     state.currentScene = idx;
     updateSceneIndicator();
     activateSceneSlide(idx);
@@ -867,11 +1060,122 @@
     }
   }
 
+  var MAIL_FLIGHT_DURATION_MS = 5200;
+  var MAIL_FLIGHT_TANGENT_EPS = 0.006;
+
+  function cancelMailFlight() {
+    if (state.mailFlightRaf) {
+      cancelAnimationFrame(state.mailFlightRaf);
+      state.mailFlightRaf = null;
+    }
+  }
+
+  /** Clock t → path: bob cruise, then ease-out skid into center (last 24%). */
+  function mailFlightPathT(t) {
+    var cruiseEnd = 0.76;
+    if (t <= cruiseEnd) return (t / cruiseEnd) * 0.76;
+    var u = (t - cruiseEnd) / (1 - cruiseEnd);
+    var eased = 1 - Math.pow(1 - u, 2.8);
+    return 0.76 + eased * 0.24;
+  }
+
+  /**
+   * Keep paper-plane right-side-up: face with scaleX, pitch only ±14°.
+   * Full 360 rotate flips the shaded top (looks upside-down).
+   */
+  function mailFlightAttitude(dx, dy, rawT) {
+    var facingLeft = dx < 0;
+    var pitch = Math.atan2(dy, Math.abs(dx) + 0.0001) * (180 / Math.PI);
+    if (pitch > 14) pitch = 14;
+    if (pitch < -14) pitch = -14;
+    /* Skid: flatten into a slight nose-up stop */
+    if (rawT > 0.8) {
+      var u = (rawT - 0.8) / 0.2;
+      u = u * u;
+      pitch = pitch * (1 - u) + (-6) * u;
+    }
+    return { flip: facingLeft ? -1 : 1, pitch: pitch };
+  }
+
+  function mailFlightTransform(flip, pitch) {
+    return 'translate(-50%, -50%) scaleX(' + flip + ') rotate(' + pitch + 'deg)';
+  }
+
+  /**
+   * rAF along #mail-flight-path: side entry → bob → skid center.
+   * Asset nose = +x; leftward flight = scaleX(-1), not rotate 180.
+   */
+  function animateMailFlight(plane, craft, onComplete) {
+    var path = document.getElementById('mail-flight-path');
+    if (!path || !plane) {
+      if (typeof onComplete === 'function') onComplete();
+      return;
+    }
+
+    cancelMailFlight();
+    var totalLen = path.getTotalLength();
+    var startTs = null;
+    var lastAttitude = { flip: -1, pitch: -8 };
+
+    function frame(ts) {
+      if (!state.mailInterruptOpen) {
+        cancelMailFlight();
+        return;
+      }
+      if (!startTs) startTs = ts;
+      var rawT = Math.min((ts - startTs) / MAIL_FLIGHT_DURATION_MS, 1);
+      var pathT = mailFlightPathT(rawT);
+      var len = pathT * totalLen;
+      var look = totalLen * MAIL_FLIGHT_TANGENT_EPS;
+      var pt, pt2;
+      if (len + look <= totalLen) {
+        pt = path.getPointAtLength(len);
+        pt2 = path.getPointAtLength(len + look);
+      } else {
+        pt = path.getPointAtLength(Math.max(0, totalLen - look));
+        pt2 = path.getPointAtLength(totalLen);
+      }
+
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
+      var x = (pt.x / 100) * vw;
+      var y = (pt.y / 100) * vh;
+      if (len + look > totalLen) {
+        var ptNow = path.getPointAtLength(len);
+        x = (ptNow.x / 100) * vw;
+        y = (ptNow.y / 100) * vh;
+      }
+      var dx = (pt2.x - pt.x) * vw;
+      var dy = (pt2.y - pt.y) * vh;
+      var attitude = mailFlightAttitude(dx, dy, rawT);
+      lastAttitude = attitude;
+
+      var opacity = rawT <= 0.06 ? rawT / 0.06 : 1;
+      var scale = 0.88 + 0.12 * Math.min(rawT / 0.18, 1);
+
+      plane.style.left = x + 'px';
+      plane.style.top = y + 'px';
+      plane.style.opacity = String(opacity);
+      plane.style.transform = mailFlightTransform(attitude.flip, attitude.pitch);
+      if (craft) craft.style.transform = 'scale(' + scale + ')';
+
+      if (rawT < 1) {
+        state.mailFlightRaf = requestAnimationFrame(frame);
+      } else {
+        state.mailFlightRaf = null;
+        if (typeof onComplete === 'function') onComplete(lastAttitude);
+      }
+    }
+
+    state.mailFlightRaf = requestAnimationFrame(frame);
+  }
+
   function clearMailInterrupt() {
     if (state.mailLandTimer) {
       clearTimeout(state.mailLandTimer);
       state.mailLandTimer = null;
     }
+    cancelMailFlight();
     state.mailInterruptOpen = false;
     var mail = document.getElementById('mail-interrupt');
     if (!mail) return;
@@ -881,9 +1185,14 @@
     var hint = mail.querySelector('[data-mail-hint]');
     if (hint) hint.hidden = true;
     var plane = mail.querySelector('[data-mail-open]');
+    var craft = mail.querySelector('.mail-interrupt__craft');
     if (plane) {
-      plane.replaceWith(plane.cloneNode(true)); /* drop animationend listeners */
+      plane.style.left = '';
+      plane.style.top = '';
+      plane.style.opacity = '';
+      plane.style.transform = '';
     }
+    if (craft) craft.style.transform = '';
   }
 
   function showMailInterrupt() {
@@ -909,9 +1218,23 @@
       hint.hidden = false;
     }
 
-    function land() {
+    var craft = mail.querySelector('.mail-interrupt__craft');
+    var landAttitude = { flip: -1, pitch: -6 };
+
+    function land(finalAttitude) {
       if (!state.mailInterruptOpen) return;
+      cancelMailFlight();
+      if (finalAttitude && typeof finalAttitude.flip === 'number') {
+        landAttitude = finalAttitude;
+      }
       mail.classList.add('is-landed');
+      if (plane) {
+        plane.style.left = '50%';
+        plane.style.top = '50%';
+        plane.style.opacity = '1';
+        plane.style.transform = mailFlightTransform(landAttitude.flip, landAttitude.pitch);
+      }
+      if (craft) craft.style.transform = '';
       sound('confirm');
       if (plane) {
         try { plane.focus({ preventScroll: true }); } catch (_) {}
@@ -919,23 +1242,25 @@
     }
 
     if (state.reducedMotion) {
-      land();
+      land(landAttitude);
     } else if (plane) {
       var done = false;
-      function onEnd(e) {
+      function finishFlight(finalAttitude) {
         if (done) return;
-        if (e && e.animationName && e.animationName.indexOf('mail-fly') === -1) return;
         done = true;
-        plane.removeEventListener('animationend', onEnd);
-        land();
+        if (state.mailLandTimer) {
+          clearTimeout(state.mailLandTimer);
+          state.mailLandTimer = null;
+        }
+        land(finalAttitude);
       }
-      plane.addEventListener('animationend', onEnd);
+      animateMailFlight(plane, craft, finishFlight);
       state.mailLandTimer = setTimeout(function () {
         state.mailLandTimer = null;
-        onEnd({ animationName: 'mail-fly-loop' });
-      }, 3400);
+        finishFlight(landAttitude);
+      }, MAIL_FLIGHT_DURATION_MS + 100);
     } else {
-      land();
+      land(landAttitude);
     }
 
     if (plane && !plane._acMailBound) {
@@ -1730,9 +2055,8 @@
    */
   function postBoot(data) {
     /* Hide presentation controls until start gate is dismissed */
-    if (dom.siteControls) {
-      dom.siteControls.hidden = true;
-    }
+    if (dom.siteControls) dom.siteControls.hidden = true;
+    if (dom.presentationNav) dom.presentationNav.hidden = true;
 
     /* Setup start gate */
     setupStartGate();
@@ -1742,6 +2066,9 @@
 
     /* Setup skip link */
     setupSkipLink();
+
+    /* Collapsible scene nav */
+    setupPresentationNav();
 
     /* Keyboard navigation */
     document.addEventListener('keydown', handleKeyDown, true);
@@ -1800,6 +2127,7 @@
       state.presentationActive = true;
       document.body.classList.add('is-started');
       if (dom.siteControls) dom.siteControls.hidden = false;
+      if (dom.presentationNav) dom.presentationNav.hidden = false;
       startClock();
       goToScene(0, { instant: true, silent: true, force: true });
     }
