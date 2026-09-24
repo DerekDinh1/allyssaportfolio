@@ -127,7 +127,7 @@
       "greeting": "Dear everyone,",
       "lines": [
         "After {years} years as *{son}*'s stay-at-home mom, I'm starting a new job.",
-        "My first day is {startDate}."
+        "My first day is October 5th."
       ],
       "signature": "{name}",
       "calendarLabel": "First day"
