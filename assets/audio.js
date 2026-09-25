@@ -1,36 +1,23 @@
 /**
- * ACSound — ACNH-flavored synthesized sound kit
- * ==============================================
- * ALL audio is synthesized at runtime through the Web Audio API.
- * No audio files are loaded — everything is built from oscillators and noise.
- * Nothing here reproduces an existing melody; it is original, generated
- * material that only *feels* like Animal Crossing.
+ * ACSound — ACNH-flavored sound kit
+ * ==================================
+ * Three independent channels (settings):
+ *   music    — looping MP3 / synth ambient bed
+ *   dialogue — Animalese talk chirps
+ *   sfx      — UI clicks, confirm, stamp, fanfare
  *
- * IMPORTANT: Browsers block AudioContext construction until a user gesture
- * (click / tap / keypress). You MUST call ACSound.init() from inside a real
- * user-event handler before any sound will play. This doubles as the
- * authentic ACNH "Press Ⓐ to start" gate.
+ * Drop cleared track at: assets/main-theme.mp3
+ *
+ * IMPORTANT: Browsers block AudioContext / autoplay until a user gesture.
+ * Call ACSound.init() + startAmbient() from a real gesture (start menu).
  *
  * API:
- *   ACSound.init()         — create & resume AudioContext (call on first gesture)
- *   ACSound.setMuted(bool)
- *   ACSound.isMuted()      — boolean
- *   ACSound.blip()         — dry Bebebese / UI tick (menus)
- *   ACSound.talk(char?)    — female Animalese pulse+noise letter chirp
- *   ACSound.resetTalk()    — reset phrase contour for a new line
- *   ACSound.select()       — soft UI click (~40ms, 600Hz)
- *   ACSound.confirm()      — happy two-note rise (major third)
- *   ACSound.cancel()       — gentle two-note fall (minor third down)
- *   ACSound.stamp()        — satisfying achievement thunk
- *   ACSound.fanfare()      — short celebratory 6-note major arpeggio
- *   ACSound.startAmbient() — begin a seamless ambient loop
- *   ACSound.stopAmbient()  — fade out and stop the ambient loop
- *
- * Safety: every public method is safe to call before init() — it silently
- * no-ops. If AudioContext construction fails, the whole API degrades to
- * silent no-ops so the site never breaks without audio support.
- *
- * Owner: creative audio engineer.
+ *   ACSound.init()
+ *   ACSound.setMuted(bool) / isMuted()
+ *   ACSound.setChannel(name, on) / isChannelOn(name) / getChannels()
+ *   ACSound.blip() select() confirm() cancel() stamp() fanfare()
+ *   ACSound.talk(char?) resetTalk()
+ *   ACSound.startAmbient() stopAmbient() isAmbientRunning()
  */
 
 (function () {
@@ -38,17 +25,30 @@
 
   /* ── Module state ──────────────────────────────────────── */
   let ctx = null;            // AudioContext (created lazily in init())
-  let muted = false;
+  let muted = false;         // master mute (all channels)
+
+  /* Per-channel enables — independent of master mute */
+  const channels = { music: true, dialogue: true, sfx: true };
+  let musicBus = null;
+  let dialogueBus = null;
+  let sfxBus = null;
 
   /* ambient-loop state */
   let ambientRunning = false;
-  let ambientGain = null;        // master GainNode for the ambient bed
+  let ambientMode = null;        // 'file' | 'synth' | null
+  let ambientStartPending = false; // true while file BGM load/play is in flight
+  let ambientGain = null;        // master GainNode for the synth bed
   let ambientTimer = null;       // scheduler interval id
   let ambientCleanupFns = [];    // registered disconnect callbacks
   let ambientLoopStart = 0;      // absolute ctx time of loop "phase zero"
   let ambientEventIndex = 0;     // monotonically rising event cursor
   let ambientLoopEvents = [];    // pre-computed one-loop timeline
   let ambientLoopDuration = 0;   // seconds per loop
+  let bgmEl = null;              // HTMLAudioElement for assets/main-theme.mp3
+  let bgmDuckTimer = null;
+
+  /* Drop your MP3 here — replace generated bed when this file loads. */
+  const BGM_SRC = 'assets/main-theme.mp3?v=audio10';
 
   const AMBIENT_LOOKAHEAD = 0.25;   // schedule this far ahead (s)
   const AMBIENT_INTERVAL_MS = 100;  // scheduler tick
@@ -59,34 +59,208 @@
 
   /* Shared loudness — SFX / talk / ambient stay in one family */
   const MIX = {
-    ambient: 0.085,
+    ambient: 0.09,
     talk: 0.155,
     blip: 0.055,
-    select: 0.075,
-    confirmA: 0.12,
-    confirmB: 0.13,
-    cancelA: 0.11,
-    cancelB: 0.10,
-    stampLow: 0.16,
-    stampHi: 0.04,
-    stampNoise: 0.07,
-    fanfare: 0.13,
+    select: 0.055,
+    confirmA: 0.085,
+    confirmB: 0.09,
+    cancelA: 0.08,
+    cancelB: 0.07,
+    stampLow: 0.07,
+    stampHi: 0.035,
+    stampNoise: 0.028,
+    fanfare: 0.1,
     talkFallback: 0.11
   };
 
-  function duckAmbientBrief() {
-    if (!ambientGain || muted || !ambientRunning) return;
+  function channelOn(name) {
+    return !muted && !!channels[name];
+  }
+
+  function ensureBuses() {
+    const c = activeCtx();
+    if (!c) return null;
+    if (!musicBus) {
+      musicBus = c.createGain();
+      musicBus.gain.value = 1;
+      musicBus.connect(c.destination);
+    }
+    if (!dialogueBus) {
+      dialogueBus = c.createGain();
+      dialogueBus.gain.value = 1;
+      dialogueBus.connect(c.destination);
+    }
+    if (!sfxBus) {
+      sfxBus = c.createGain();
+      sfxBus.gain.value = 1;
+      sfxBus.connect(c.destination);
+    }
+    return c;
+  }
+
+  function applyBgmVolume() {
+    if (!bgmEl) return;
     try {
-      const c = activeCtx();
-      if (!c) return;
-      const t = c.currentTime;
-      const g = ambientGain.gain;
-      g.cancelScheduledValues(t);
-      const cur = Math.max(0.0001, g.value || MIX.ambient);
-      g.setValueAtTime(cur, t);
-      g.linearRampToValueAtTime(MIX.ambient * 0.35, t + 0.02);
-      g.linearRampToValueAtTime(MIX.ambient, t + 0.28);
+      const on = channelOn('music') && ambientRunning;
+      bgmEl.volume = on ? MIX.ambient : 0;
+      if (!on) {
+        if (!bgmEl.paused) bgmEl.pause();
+      } else if (ambientMode === 'file' && bgmEl.paused) {
+        bgmEl.play().catch(function () {});
+      }
     } catch (_) {}
+  }
+
+  function applyBusMutes() {
+    try {
+      if (musicBus) musicBus.gain.value = channelOn('music') ? 1 : 0;
+      if (dialogueBus) dialogueBus.gain.value = channelOn('dialogue') ? 1 : 0;
+      if (sfxBus) sfxBus.gain.value = channelOn('sfx') ? 1 : 0;
+    } catch (_) {}
+    applyBgmVolume();
+    if (ambientGain) {
+      try {
+        const c = activeCtx();
+        if (!c) return;
+        const target = channelOn('music') && ambientRunning ? MIX.ambient : 0;
+        ambientGain.gain.cancelScheduledValues(c.currentTime);
+        ambientGain.gain.setValueAtTime(target, c.currentTime);
+      } catch (_) {}
+    }
+  }
+
+  function ensureBgmEl() {
+    if (bgmEl) return bgmEl;
+    try {
+      bgmEl = new Audio(BGM_SRC);
+      bgmEl.loop = true;
+      bgmEl.preload = 'auto';
+      bgmEl.setAttribute('playsinline', '');
+      bgmEl.volume = MIX.ambient;
+    } catch (_) {
+      bgmEl = null;
+    }
+    return bgmEl;
+  }
+
+  /** Tear down synth bed only (leave file BGM alone). */
+  function stopSynthAmbientImmediate() {
+    if (ambientTimer) {
+      clearInterval(ambientTimer);
+      ambientTimer = null;
+    }
+    ambientCleanupFns.forEach(function (fn) { try { fn(); } catch (_) {} });
+    ambientCleanupFns = [];
+    ambientEventIndex = 0;
+    ambientLoopEvents = [];
+    if (ambientGain) {
+      try {
+        const c = activeCtx();
+        if (c) ambientGain.gain.cancelScheduledValues(c.currentTime);
+        ambientGain.disconnect();
+      } catch (_) {}
+      ambientGain = null;
+    }
+  }
+
+  /** True when HTMLAudio BGM is already audible / claimed. */
+  function fileBgmLive() {
+    return ambientMode === 'file' ||
+      !!(bgmEl && !bgmEl.paused && !bgmEl.ended && bgmEl.currentTime > 0);
+  }
+
+  /**
+   * Prefer looping MP3; on missing/error call onFail (synth bed).
+   * Never start synth while a file attempt is still pending, and never
+   * leave synth plucks stacked on top of a successful file play (race
+   * from startMenuMusic + dismissStartGate both calling startAmbient).
+   */
+  function startFileBgm(onFail) {
+    const el = ensureBgmEl();
+    if (!el) {
+      ambientStartPending = false;
+      if (!fileBgmLive() && !ambientRunning) onFail();
+      return;
+    }
+    let settled = false;
+    let softFallback = false;
+    function invokeFail() {
+      if (ambientRunning || fileBgmLive()) return;
+      onFail();
+    }
+    function fail() {
+      if (settled) return;
+      settled = true;
+      ambientStartPending = false;
+      /* Another concurrent start may already own file BGM — do not synth. */
+      invokeFail();
+    }
+    function softFailToSynth() {
+      /* Keep canplay armed: late MP3 must still win and kill synth. */
+      if (settled || softFallback) return;
+      if (ambientRunning || fileBgmLive()) return;
+      softFallback = true;
+      ambientStartPending = false;
+      invokeFail();
+    }
+    function playOk() {
+      if (settled) return;
+      settled = true;
+      if (!channelOn('music')) {
+        ambientStartPending = false;
+        return;
+      }
+      try {
+        /* File won — kill any synth that raced in from softFail / sibling. */
+        if (ambientMode === 'synth' || ambientGain || ambientTimer) {
+          stopSynthAmbientImmediate();
+        }
+        el.volume = MIX.ambient;
+        const p = el.play();
+        ambientRunning = true;
+        ambientMode = 'file';
+        ambientStartPending = false;
+        if (p && typeof p.catch === 'function') {
+          p.catch(function () {
+            /* Only fall back if nothing else claimed ambient since play(). */
+            if (ambientMode === 'file') {
+              ambientRunning = false;
+              ambientMode = null;
+            }
+            if (ambientRunning || fileBgmLive() || ambientStartPending) return;
+            onFail();
+          });
+        }
+      } catch (_) {
+        ambientRunning = false;
+        ambientMode = null;
+        ambientStartPending = false;
+        if (!fileBgmLive()) onFail();
+      }
+    }
+    el.addEventListener('error', fail, { once: true });
+    if (el.readyState >= 2) {
+      playOk();
+    } else {
+      el.addEventListener('canplay', playOk, { once: true });
+      try { el.load(); } catch (_) { fail(); return; }
+      /* Slow MP3 must NOT hard-fail to synth (old 2.5s timeout stacked
+         plucks on BGM when a concurrent startAmbient later succeeded).
+         Soft fallback only after a long wait; canplay can still reclaim. */
+      setTimeout(function () {
+        if (settled) return;
+        if (el.readyState >= 2) {
+          playOk();
+          return;
+        }
+        if (el.error || el.networkState === 3 /* NETWORK_NO_SOURCE */) {
+          fail();
+          return;
+        }
+        softFailToSynth();
+      }, 8000);
+    }
   }
 
   /*
@@ -128,6 +302,9 @@
   function tone(opts) {
     const c = activeCtx();
     if (!c || muted) return;
+    const ch = opts.channel || 'sfx';
+    if (!channelOn(ch)) return;
+    ensureBuses();
 
     const t0 = opts.time !== undefined ? opts.time : c.currentTime;
     const type = opts.type || 'triangle';
@@ -163,7 +340,9 @@
     if (hold > 0) g.gain.setValueAtTime(peak, t0 + attack + hold);
     g.gain.linearRampToValueAtTime(0, t0 + attack + hold + release);
 
-    let dest = opts.destination || c.destination;
+    let dest = opts.destination ||
+      (ch === 'dialogue' ? dialogueBus : ch === 'music' ? musicBus : sfxBus) ||
+      c.destination;
     if (filter) {
       osc.connect(filter);
       filter.connect(g);
@@ -222,28 +401,35 @@
    */
   function pluckNote(freq, t0, peak, detune) {
     const c = activeCtx();
-    if (!c || muted) return;
+    if (!c || muted || !channelOn('sfx')) return;
+    ensureBuses();
 
     const osc = c.createOscillator();
-    osc.type = 'triangle';
+    osc.type = 'sine';
     osc.frequency.setValueAtTime(freq, t0);
     if (detune) osc.detune.setValueAtTime(detune, t0);
 
     const g = c.createGain();
     g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(peak, t0 + 0.004);
-    g.gain.setValueAtTime(peak, t0 + 0.03);
-    g.gain.linearRampToValueAtTime(peak * 0.25, t0 + 0.08);
-    g.gain.setValueAtTime(peak * 0.25, t0 + 0.11);
-    g.gain.linearRampToValueAtTime(0, t0 + 0.2);
+    g.gain.linearRampToValueAtTime(peak, t0 + 0.006);
+    g.gain.setValueAtTime(peak, t0 + 0.02);
+    g.gain.linearRampToValueAtTime(peak * 0.2, t0 + 0.07);
+    g.gain.linearRampToValueAtTime(0, t0 + 0.16);
+
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(Math.min(3200, freq * 3.2), t0);
+    lp.Q.setValueAtTime(0.4, t0);
 
     osc.connect(g);
-    g.connect(c.destination);
+    g.connect(lp);
+    lp.connect(sfxBus || c.destination);
     osc.start(t0);
-    osc.stop(t0 + 0.25);
+    osc.stop(t0 + 0.2);
     osc.onended = function () {
       try { osc.disconnect(); } catch (_) {}
       try { g.disconnect(); } catch (_) {}
+      try { lp.disconnect(); } catch (_) {}
     };
   }
 
@@ -258,6 +444,7 @@
     init: function () {
       if (ctx && ctx.state !== 'closed') {
         if (ctx.state === 'suspended') ctx.resume().catch(function () {});
+        ensureBuses();
         return;
       }
       try {
@@ -265,6 +452,7 @@
         if (!AudioCtx) return;
         ctx = new AudioCtx();
         if (ctx && ctx.state === 'suspended') ctx.resume().catch(function () {});
+        ensureBuses();
       } catch (e) {
         ctx = null;
       }
@@ -272,18 +460,56 @@
 
     setMuted: function (val) {
       muted = !!val;
-      /* Hard-silence ambient bed immediately so mute isn't a slow fade-only feel */
-      if (muted && ambientGain) {
+      applyBusMutes();
+      if (ambientMode === 'file' && bgmEl) {
         try {
-          var c = activeCtx();
-          if (c) {
-            ambientGain.gain.cancelScheduledValues(c.currentTime);
-            ambientGain.gain.setValueAtTime(0, c.currentTime);
+          if (muted || !channels.music) {
+            bgmEl.pause();
+          } else if (ambientRunning) {
+            bgmEl.volume = MIX.ambient;
+            bgmEl.play().catch(function () {});
           }
         } catch (_) {}
+        return;
       }
+      try {
+        var c = activeCtx();
+        if (!c || !ambientGain) return;
+        ambientGain.gain.cancelScheduledValues(c.currentTime);
+        if (muted || !channels.music) {
+          ambientGain.gain.setValueAtTime(0, c.currentTime);
+        } else if (ambientRunning) {
+          ambientGain.gain.setValueAtTime(0, c.currentTime);
+          ambientGain.gain.linearRampToValueAtTime(MIX.ambient, c.currentTime + 0.6);
+        }
+      } catch (_) {}
     },
     isMuted: function () { return muted; },
+
+    setChannel: function (name, on) {
+      if (!Object.prototype.hasOwnProperty.call(channels, name)) return;
+      channels[name] = !!on;
+      applyBusMutes();
+      if (name === 'music') {
+        if (!channels.music && ambientMode === 'file' && bgmEl) {
+          try { bgmEl.pause(); } catch (_) {}
+        } else if (channels.music && ambientRunning && ambientMode === 'file' && bgmEl && !muted) {
+          try {
+            bgmEl.volume = MIX.ambient;
+            bgmEl.play().catch(function () {});
+          } catch (_) {}
+        }
+      }
+    },
+    isChannelOn: function (name) {
+      return Object.prototype.hasOwnProperty.call(channels, name) ? !!channels[name] : true;
+    },
+    getChannels: function () {
+      return { music: !!channels.music, dialogue: !!channels.dialogue, sfx: !!channels.sfx };
+    },
+
+    /** True when ambient scheduler is live (for debug / unmute restart). */
+    isAmbientRunning: function () { return !!ambientRunning; },
 
     /* ── UI sounds ─────────────────────────────────── */
 
@@ -292,7 +518,7 @@
      * NOT villager talk — keep dry and short.
      */
     blip: function () {
-      if (!activeCtx() || muted) return;
+      if (!activeCtx() || !channelOn('sfx')) return;
       tone({
         type: 'triangle',
         freq: 720 + Math.random() * 80,
@@ -303,7 +529,8 @@
         filterType: 'lowpass',
         filterFreq: 1600,
         filterQ: 0.5,
-        tag: 'blip'
+        tag: 'blip',
+        channel: 'sfx'
       });
     },
 
@@ -313,11 +540,12 @@
      * No continuous formants. Silence on punctuation.
      */
     talk: function (char) {
-      if (!activeCtx() || muted) return;
+      if (!activeCtx() || !channelOn('dialogue')) return;
       if (blipCount >= MAX_BLIP_NODES) return;
 
       try {
-        const c = activeCtx();
+        const c = ensureBuses() || activeCtx();
+        if (!c) return;
         const raw = (char && String(char).length) ? String(char).charAt(0) : '';
         const ch = raw.toLowerCase();
         if (!ch || /[.,!?;:'"…\s]/.test(ch)) return;
@@ -346,14 +574,14 @@
         const t0 = c.currentTime;
         const bodyDelay = unvoiced ? 0.008 : (voicedCons ? 0.004 : 0);
         blipCount++;
-        duckAmbientBrief();
+        /* Do NOT duck ambient — letter-rate ducks thump through opening talk. */
 
         const master = c.createGain();
         master.gain.setValueAtTime(0.0001, t0);
         master.gain.linearRampToValueAtTime(MIX.talk, t0 + 0.0025);
         master.gain.setValueAtTime(MIX.talk, t0 + Math.max(0.003, dur - 0.012));
         master.gain.linearRampToValueAtTime(0.0001, t0 + dur);
-        master.connect(c.destination);
+        master.connect(dialogueBus || c.destination);
 
         const lp = c.createBiquadFilter();
         lp.type = 'lowpass';
@@ -436,6 +664,7 @@
             type: 'triangle',
             freq: 620 + Math.random() * 60,
             gain: MIX.talkFallback,
+            channel: 'dialogue'
           });
         } catch (_) {}
       }
@@ -449,85 +678,148 @@
 
     /** select() — soft UI click (menu / A press), NOT talk. */
     select: function () {
-      if (!activeCtx() || muted) return;
+      if (!activeCtx() || !channelOn('sfx')) return;
+      tone({
+        type: 'sine',
+        freq: 880,
+        gain: MIX.select,
+        attack: 0.004,
+        hold: 0.01,
+        release: 0.04,
+        filterType: 'lowpass',
+        filterFreq: 2400,
+        filterQ: 0.4,
+        channel: 'sfx'
+      });
+    },
+
+    /** confirm() — soft two-note rise (C6 → E6), light not thumpy. */
+    confirm: function () {
+      if (!activeCtx() || !channelOn('sfx')) return;
+      const c = activeCtx();
+      const now = c.currentTime;
+      pluckNote(1046.5, now, MIX.confirmA);
+      pluckNote(1318.51, now + 0.08, MIX.confirmB);
+    },
+
+    /** cancel() — gentle two-note fall (E6 → C#6). */
+    cancel: function () {
+      if (!activeCtx() || !channelOn('sfx')) return;
+      const c = activeCtx();
+      const now = c.currentTime;
+      pluckNote(1318.51, now, MIX.cancelA);
+      pluckNote(1108.73, now + 0.08, MIX.cancelB);
+    },
+
+    /**
+     * stamp() — soft paper-stamp pop (NOT a bass thunk).
+     * Mid triangle + tiny noise; no sub-100Hz thud.
+     */
+    stamp: function () {
+      if (!activeCtx() || !channelOn('sfx')) return;
       tone({
         type: 'triangle',
-        freq: 680,
-        gain: MIX.select,
-        attack: 0.002,
-        hold: 0.014,
-        release: 0.028,
+        freq: 420,
+        gain: MIX.stampLow,
+        attack: 0.003,
+        hold: 0.028,
+        release: 0.08,
         filterType: 'lowpass',
-        filterFreq: 1800,
-        filterQ: 0.6
+        filterFreq: 1400,
+        filterQ: 0.5,
+        channel: 'sfx'
       });
-    },
-
-    /** confirm() — happy two-note rise, a major third apart (C5 → E5). */
-    confirm: function () {
-      if (!activeCtx() || muted) return;
-      const c = activeCtx();
-      const now = c.currentTime;
-      pluckNote(523.25, now, MIX.confirmA);
-      pluckNote(659.25, now + 0.09, MIX.confirmB);
-    },
-
-    /** cancel() — gentle two-note fall, a minor third down (E5 → C#5). */
-    cancel: function () {
-      if (!activeCtx() || muted) return;
-      const c = activeCtx();
-      const now = c.currentTime;
-      pluckNote(659.25, now, MIX.cancelA);
-      pluckNote(554.37, now + 0.09, MIX.cancelB);
-    },
-
-    /** stamp() — low sine thump + a short filtered noise burst. */
-    stamp: function () {
-      if (!activeCtx() || muted) return;
-      tone({ type: 'sine', freq: 120, gain: MIX.stampLow, attack: 0.002, hold: 0.06, release: 0.09 });
       tone({
-        type: 'triangle', freq: 300, gain: MIX.stampHi, attack: 0.001, hold: 0.012, release: 0.04,
-        noiseGain: MIX.stampNoise, noiseHold: 0.025, noiseRelease: 0.05
+        type: 'sine',
+        freq: 680,
+        gain: MIX.stampHi,
+        attack: 0.002,
+        hold: 0.012,
+        release: 0.05,
+        channel: 'sfx'
+      });
+      tone({
+        type: 'triangle',
+        freq: 900,
+        gain: MIX.stampNoise * 0.4,
+        attack: 0.001,
+        hold: 0.008,
+        release: 0.03,
+        noiseGain: MIX.stampNoise,
+        noiseHold: 0.012,
+        noiseRelease: 0.03,
+        filterType: 'highpass',
+        filterFreq: 1200,
+        filterQ: 0.4,
+        channel: 'sfx'
       });
     },
 
-    /** fanfare() — celebratory 6-note major arpeggio (C E G C E G), plucky. */
+    /** fanfare() — celebratory 5-note major sparkle (lighter, higher). */
     fanfare: function () {
-      if (!activeCtx() || muted) return;
-      const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
-      const step = 0.09;
+      if (!activeCtx() || !channelOn('sfx')) return;
+      const notes = [659.25, 783.99, 987.77, 1174.66, 1318.51];
+      const step = 0.07;
       const c = activeCtx();
       const now = c.currentTime;
       for (let i = 0; i < notes.length; i++) {
-        pluckNote(notes[i], now + i * step, MIX.fanfare, (Math.random() - 0.5) * 6);
+        pluckNote(notes[i], now + i * step, MIX.fanfare * (1 - i * 0.08), (Math.random() - 0.5) * 4);
       }
     },
 
     /* ── Ambient loop ───────────────────────────────── */
 
     /**
-     * startAmbient() — begin a seamless, cozy ambient bed.
-     * A slow diatonic C-major progression (Cmaj7 → Am7 → Fmaj7 → G7) as soft
-     * sine pads, overlaid with a sparse plucked melody drawn from the C major
-     * pentatonic scale. No drums, low volume, infinite and seam-free.
+     * startAmbient() — loop assets/bgm.mp3 when present; else cozy synth bed.
+     * Synth: Slow I–vi–IV–V (Cmaj7 → Am7 → Fmaj7 → G7) at ~64 BPM with warm
+     * sine/triangle chorus pads, gentle LP, chalky breeze, and sparse
+     * pentatonic pluck phrases. No drums, low volume, infinite and seam-free.
      */
     startAmbient: function () {
-      if (!activeCtx() || muted) return;
-      if (ambientRunning) return;
+      if (!channelOn('music')) return;
+      /* Guard re-entry while MP3 is still loading — second call from
+         dismissStartGate must not open a parallel startFileBgm/onFail. */
+      if (ambientRunning || ambientStartPending) return;
+      if (fileBgmLive()) {
+        ambientRunning = true;
+        ambientMode = 'file';
+        return;
+      }
 
-      const c = activeCtx();
+      const self = this;
+      ensureBuses();
+      ambientStartPending = true;
+      startFileBgm(function () {
+        if (ambientRunning || fileBgmLive() || ambientStartPending) return;
+        self._startSynthAmbient();
+      });
+    },
+
+    /** Internal: generated Web Audio bed (used when bgm.mp3 missing). */
+    _startSynthAmbient: function () {
+      if (!activeCtx() || !channelOn('music')) return;
+      if (ambientRunning || ambientStartPending || fileBgmLive()) return;
+
+      const c = ensureBuses() || activeCtx();
+      /* Ensure context is running — suspended ctx schedules silence */
+      if (c.state === 'suspended') {
+        c.resume().catch(function () {});
+      }
       const now = c.currentTime;
+      ambientMode = 'synth';
+      ambientStartPending = false;
 
       /* master bed gain — silent start, fade in over ~1.5s */
       ambientGain = c.createGain();
       ambientGain.gain.setValueAtTime(0, now);
       ambientGain.gain.linearRampToValueAtTime(MIX.ambient, now + 1.5);
-      ambientGain.connect(c.destination);
+      ambientGain.connect(musicBus || c.destination);
 
       /* --- build the one-loop timeline ----------------------- */
-      const beat = 60 / 72;                 // ~0.833s at 72 BPM
-      const chordDur = beat * 4;            // one bar ≈ 3.333s
-      const LOOP = chordDur * 4;            // four bars ≈ 13.333s
+      const BPM = 64;
+      const beat = 60 / BPM;              // ~0.9375s
+      const chordDur = beat * 8;          // 2 bars per chord ≈ 7.5s
+      const LOOP = chordDur * 4;          // I–vi–IV–V ≈ 30s
 
       /* C-major pentatonic note pool (frequencies, Hz) */
       const P = {
@@ -543,15 +835,20 @@
         { at: chordDur * 3,  freqs: [98.00, 123.47, 146.83, 174.61] }    // G7
       ];
 
-      /* sparse plucked melody: [offset-in-loop, frequency] */
+      /* sparse pentatonic phrases — rests between motifs, not busy arpeggios */
       const melody = [
-        [0.42, P.E5], [1.25, P.C5], [2.08, P.D5], [2.92, P.G4],
-        [3.75, P.A4], [4.58, P.C5], [5.42, P.E5], [6.26, P.C5],
-        [7.10, P.E5], [7.94, P.D5], [8.78, P.C5], [9.62, P.A4],
-        [10.46, P.G4], [11.30, P.A4], [12.14, P.D5], [12.92, P.C5]
+        [chordDur * 0 + 2.1,  P.E5],
+        [chordDur * 0 + 4.8,  P.G4],
+        [chordDur * 1 + 2.4,  P.C5],
+        [chordDur * 1 + 5.6,  P.A4],
+        [chordDur * 2 + 3.0,  P.A4],
+        [chordDur * 2 + 6.2,  P.D5],
+        [chordDur * 3 + 2.0,  P.G4],
+        [chordDur * 3 + 4.5,  P.C5],
+        [chordDur * 3 + 6.8,  P.E5]
       ];
 
-      ambientLoopEvents = [];
+      ambientLoopEvents = [{ kind: 'breeze', offset: 0, duration: LOOP }];
       chords.forEach(function (ch) {
         ambientLoopEvents.push({ kind: 'chord', offset: ch.at, freqs: ch.freqs });
       });
@@ -575,69 +872,174 @@
         return ambientLoopStart + loop * LOOP + ambientLoopEvents[idx].offset;
       }
 
-      function scheduleChord(freqs, t0) {
+      function scheduleWarmPad(freqs, t0) {
         const cNow = activeCtx();
         if (!cNow || !ambientGain) return;
-        const peak = 0.032;
-        const attack = 0.8;
-        const release = 1.2;
-        const sustainUntil = t0 + chordDur;
 
+        const attack = 2.0;
+        const release = 2.8;
+        const sustainUntil = t0 + chordDur + 0.6;
+        const end = sustainUntil + release + 0.15;
+
+        const lp = cNow.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(820, t0);
+        lp.frequency.linearRampToValueAtTime(980, t0 + chordDur * 0.45);
+        lp.frequency.linearRampToValueAtTime(860, t0 + chordDur);
+        lp.Q.setValueAtTime(0.35, t0);
+        lp.connect(ambientGain);
+
+        const voices = [];
         freqs.forEach(function (freq) {
-          const osc = cNow.createOscillator();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, t0);
-          osc.detune.setValueAtTime((Math.random() - 0.5) * 10, t0);
+          [
+            { type: 'sine', detune: -5, gain: 0.028 },
+            { type: 'triangle', detune: 4, gain: 0.018 },
+            { type: 'sine', detune: 7, gain: 0.012 }
+          ].forEach(function (v) {
+            const osc = cNow.createOscillator();
+            osc.type = v.type;
+            osc.frequency.setValueAtTime(freq, t0);
+            osc.detune.setValueAtTime(v.detune + (Math.random() - 0.5) * 3, t0);
 
-          const g = cNow.createGain();
-          g.gain.setValueAtTime(0, t0);
-          g.gain.linearRampToValueAtTime(peak, t0 + attack);
-          g.gain.setValueAtTime(peak, sustainUntil);
-          g.gain.linearRampToValueAtTime(0, sustainUntil + release);
+            const g = cNow.createGain();
+            g.gain.setValueAtTime(0, t0);
+            g.gain.linearRampToValueAtTime(v.gain, t0 + attack);
+            g.gain.setValueAtTime(v.gain, sustainUntil);
+            g.gain.linearRampToValueAtTime(0, sustainUntil + release);
 
-          osc.connect(g);
-          g.connect(ambientGain);
-          osc.start(t0);
-          osc.stop(sustainUntil + release + 0.1);
-
-          const cleanup = function () {
-            try { osc.disconnect(); } catch (_) {}
-            try { g.disconnect(); } catch (_) {}
-          };
-          osc.onended = cleanup;
-          ambientCleanupFns.push(cleanup);
+            osc.connect(g);
+            g.connect(lp);
+            osc.start(t0);
+            osc.stop(end);
+            voices.push({ osc: osc, g: g });
+          });
         });
+
+        const cleanup = function () {
+          voices.forEach(function (v) {
+            try { v.osc.disconnect(); } catch (_) {}
+            try { v.g.disconnect(); } catch (_) {}
+          });
+          try { lp.disconnect(); } catch (_) {}
+        };
+        voices[0].osc.onended = cleanup;
+        ambientCleanupFns.push(cleanup);
+      }
+
+      function scheduleBreeze(t0, duration) {
+        const cNow = activeCtx();
+        if (!cNow || !ambientGain) return;
+
+        const fadeIn = 3.0;
+        const fadeOut = 3.0;
+        const holdEnd = t0 + duration - fadeOut;
+        const end = t0 + duration + 0.1;
+
+        const bufLen = Math.ceil(cNow.sampleRate * duration);
+        const buf = cNow.createBuffer(1, bufLen, cNow.sampleRate);
+        const data = buf.getChannelData(0);
+        let prev = 0;
+        for (let i = 0; i < data.length; i++) {
+          const white = Math.random() * 2 - 1;
+          prev = prev * 0.985 + white * 0.015;
+          data[i] = prev;
+        }
+
+        const src = cNow.createBufferSource();
+        src.buffer = buf;
+        src.loop = false;
+
+        const hp = cNow.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.setValueAtTime(380, t0);
+        hp.Q.setValueAtTime(0.4, t0);
+
+        const lp = cNow.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(2400, t0);
+        lp.frequency.linearRampToValueAtTime(1800, t0 + duration * 0.5);
+        lp.frequency.linearRampToValueAtTime(2200, t0 + duration);
+        lp.Q.setValueAtTime(0.3, t0);
+
+        const g = cNow.createGain();
+        g.gain.setValueAtTime(0, t0);
+        g.gain.linearRampToValueAtTime(0.014, t0 + fadeIn);
+        g.gain.setValueAtTime(0.014, holdEnd);
+        g.gain.linearRampToValueAtTime(0, holdEnd + fadeOut);
+
+        src.connect(hp);
+        hp.connect(lp);
+        lp.connect(g);
+        g.connect(ambientGain);
+        src.start(t0);
+        src.stop(end);
+
+        const cleanup = function () {
+          try { src.disconnect(); } catch (_) {}
+          try { hp.disconnect(); } catch (_) {}
+          try { lp.disconnect(); } catch (_) {}
+          try { g.disconnect(); } catch (_) {}
+        };
+        src.onended = cleanup;
+        ambientCleanupFns.push(cleanup);
       }
 
       function schedulePluck(freq, t0) {
         const cNow = activeCtx();
         if (!cNow || !ambientGain) return;
-        const peak = 0.065;
-        osc.detune.setValueAtTime((Math.random() - 0.5) * 8, t0);
+
+        const peak = 0.075;
+        const osc = cNow.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, t0);
+        osc.detune.setValueAtTime((Math.random() - 0.5) * 6, t0);
+
+        const sine = cNow.createOscillator();
+        sine.type = 'sine';
+        sine.frequency.setValueAtTime(freq * 2, t0);
+        sine.detune.setValueAtTime((Math.random() - 0.5) * 4, t0);
+
+        const lp = cNow.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(2200, t0);
+        lp.frequency.exponentialRampToValueAtTime(900, t0 + 0.55);
+        lp.Q.setValueAtTime(0.5, t0);
 
         const g = cNow.createGain();
         g.gain.setValueAtTime(0, t0);
-        g.gain.linearRampToValueAtTime(peak, t0 + 0.006);
-        g.gain.setValueAtTime(peak, t0 + 0.03);
-        g.gain.linearRampToValueAtTime(peak * 0.22, t0 + 0.11);
-        g.gain.setValueAtTime(peak * 0.22, t0 + 0.4);
-        g.gain.linearRampToValueAtTime(0, t0 + 0.9);
+        g.gain.linearRampToValueAtTime(peak, t0 + 0.008);
+        g.gain.setValueAtTime(peak, t0 + 0.04);
+        g.gain.linearRampToValueAtTime(peak * 0.18, t0 + 0.14);
+        g.gain.setValueAtTime(peak * 0.18, t0 + 0.55);
+        g.gain.linearRampToValueAtTime(0, t0 + 1.15);
+
+        const sineG = cNow.createGain();
+        sineG.gain.value = 0.22;
 
         osc.connect(g);
-        g.connect(ambientGain);
+        sine.connect(sineG);
+        sineG.connect(g);
+        g.connect(lp);
+        lp.connect(ambientGain);
         osc.start(t0);
-        osc.stop(t0 + 1.0);
+        sine.start(t0);
+        osc.stop(t0 + 1.25);
+        sine.stop(t0 + 1.25);
 
         const cleanup = function () {
           try { osc.disconnect(); } catch (_) {}
+          try { sine.disconnect(); } catch (_) {}
+          try { sineG.disconnect(); } catch (_) {}
           try { g.disconnect(); } catch (_) {}
+          try { lp.disconnect(); } catch (_) {}
         };
         osc.onended = cleanup;
         ambientCleanupFns.push(cleanup);
       }
 
       function dispatch(ev, t0) {
-        if (ev.kind === 'chord') scheduleChord(ev.freqs, t0);
+        if (ev.kind === 'chord') scheduleWarmPad(ev.freqs, t0);
+        else if (ev.kind === 'breeze') scheduleBreeze(t0, ev.duration);
         else schedulePluck(ev.freq, t0);
       }
 
@@ -648,18 +1050,21 @@
         if (!cNow || !ambientGain) return;
 
         const horizon = cNow.currentTime + AMBIENT_LOOKAHEAD;
-        /* guard against pathological runaway: never schedule > 2s ahead */
         let guard = 0;
         while (guard++ < 4000 && ambientEventIndex < 1e9) {
           const t = eventTime(ambientEventIndex);
           if (t >= horizon) break;
-          dispatch(ambientLoopEvents[ambientEventIndex % ambientLoopEvents.length], t);
+          try {
+            dispatch(ambientLoopEvents[ambientEventIndex % ambientLoopEvents.length], t);
+          } catch (_) {
+            /* Skip a bad event so one failure cannot kill the bed */
+          }
           ambientEventIndex++;
         }
       }
 
       ambientRunning = true;
-      scheduleAhead();                       // prime the first events
+      scheduleAhead();
       ambientTimer = setInterval(scheduleAhead, AMBIENT_INTERVAL_MS);
     },
 
@@ -668,9 +1073,28 @@
      * scheduled nodes so nothing leaks.
      */
     stopAmbient: function () {
+      ambientStartPending = false;
+      if (ambientMode === 'file' || bgmEl) {
+        ambientRunning = false;
+        ambientMode = null;
+        if (bgmDuckTimer) {
+          clearTimeout(bgmDuckTimer);
+          bgmDuckTimer = null;
+        }
+        if (bgmEl) {
+          try {
+            bgmEl.pause();
+            bgmEl.currentTime = 0;
+          } catch (_) {}
+        }
+        /* If synth was never started, done. If both somehow live, fall through. */
+        if (!ambientGain && !ambientTimer) return;
+      }
+
       if (!ambientRunning && !ambientGain) return;
 
       ambientRunning = false;
+      ambientMode = null;
 
       if (ambientTimer) {
         clearInterval(ambientTimer);

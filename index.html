@@ -13,8 +13,8 @@
 
 <link rel="icon" href="assets/leaf.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/tokens.css">
-<link rel="stylesheet" href="assets/base.css?v=mail10">
-<link rel="stylesheet" href="assets/site.css?v=mail10">
+<link rel="stylesheet" href="assets/base.css?v=scene9">
+<link rel="stylesheet" href="assets/site.css?v=scene13">
 </head>
 <body>
 
@@ -56,13 +56,31 @@
   </div>
 </nav>
 
-<!-- ============ presentation controls ============ -->
+<!-- ============ presentation controls (bottom-right settings) ============ -->
 <div class="site-controls" hidden>
   <p class="section-progress" aria-label="Scene"><span>01</span> / 05</p>
-  <button class="sound-toggle" type="button" aria-pressed="false" aria-label="Sound off">
-    <span class="ac-key ac-key--x" aria-hidden="true">X</span>
-    <span class="sound-toggle__label" data-content="ui.soundOff">Sound off</span>
-  </button>
+  <div class="audio-settings">
+    <button class="audio-settings__toggle" type="button" aria-expanded="false" aria-controls="audio-settings-panel" aria-label="Audio settings">
+      <span class="ac-key ac-key--x" aria-hidden="true">X</span>
+      <span class="audio-settings__toggle-label">Settings</span>
+    </button>
+    <div class="audio-settings__panel" id="audio-settings-panel" hidden>
+      <p class="audio-settings__title">Audio</p>
+      <label class="audio-settings__row">
+        <input type="checkbox" data-audio-channel="music" checked>
+        <span>Music</span>
+      </label>
+      <label class="audio-settings__row">
+        <input type="checkbox" data-audio-channel="dialogue" checked>
+        <span>Dialogue</span>
+      </label>
+      <label class="audio-settings__row">
+        <input type="checkbox" data-audio-channel="sfx" checked>
+        <span>Sound effects</span>
+      </label>
+      <button type="button" class="audio-settings__mute-all" data-audio-mute-all>Mute all</button>
+    </div>
+  </div>
   <a class="edit-link" data-edit-link hidden></a>
 </div>
 
@@ -79,12 +97,37 @@
     <div class="surprise-popup__confetti" data-surprise-confetti aria-hidden="true"></div>
     <div class="surprise-popup__body" data-surprise-body></div>
     <div class="surprise-popup__footer">
-      <p class="surprise-popup__progress" data-surprise-progress aria-live="polite">1 / 4</p>
+      <button type="button" class="ac-btn surprise-popup__back" data-surprise-back>
+        <span class="ac-key" aria-hidden="true">B</span>
+        <span data-surprise-back-label>Back</span>
+      </button>
+      <p class="surprise-popup__progress" data-surprise-progress aria-live="polite">1 / 3</p>
       <button type="button" class="ac-btn surprise-popup__next" data-surprise-next>
         <span class="ac-key ac-key--a" aria-hidden="true">A</span>
         <span data-surprise-next-label>Next</span>
       </button>
     </div>
+  </div>
+</div>
+
+<!-- Scrapbook photo lightbox -->
+<div class="photo-viewer" id="photo-viewer" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="photo-viewer-title">
+  <div class="photo-viewer__scrim" data-photo-close></div>
+  <div class="photo-viewer__panel">
+    <button type="button" class="photo-viewer__close" data-photo-close aria-label="Close photo">✕</button>
+    <button type="button" class="photo-viewer__nav photo-viewer__nav--prev" data-photo-prev aria-label="Previous photo">
+      <span class="ac-key" aria-hidden="true">◀</span>
+    </button>
+    <figure class="photo-viewer__figure">
+      <img class="photo-viewer__img" data-photo-img alt="" decoding="async">
+      <figcaption>
+        <h3 class="photo-viewer__title" id="photo-viewer-title" data-photo-title></h3>
+        <p class="photo-viewer__count" data-photo-count aria-live="polite"></p>
+      </figcaption>
+    </figure>
+    <button type="button" class="photo-viewer__nav photo-viewer__nav--next" data-photo-next aria-label="Next photo">
+      <span class="ac-key" aria-hidden="true">▶</span>
+    </button>
   </div>
 </div>
 
@@ -131,8 +174,8 @@
 </main>
 
 <script src="assets/content.js"></script>
-<script src="assets/sections.js"></script>
-<script src="assets/audio.js?v=mail10"></script>
-<script src="assets/app.js?v=mail10"></script>
+<script src="assets/sections.js?v=scene13"></script>
+<script src="assets/audio.js?v=audio10"></script>
+<script src="assets/app.js?v=scene17"></script>
 </body>
 </html>

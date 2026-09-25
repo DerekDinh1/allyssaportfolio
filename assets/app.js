@@ -56,7 +56,13 @@
     surpriseBeatIndex: 0,
     surpriseBeats: [],
     navOpen: false,
-    navLabels: SECTION_NAV_FALLBACKS.slice()
+    navLabels: SECTION_NAV_FALLBACKS.slice(),
+    photoViewerOpen: false,
+    photoViewerIndex: 0,
+    photoViewerItems: [],
+    photoViewerOpener: null,
+    menuMusicStarted: false,
+    introSfxTimer: null
   };
 
   /* ================================================================
@@ -81,6 +87,27 @@
         else window.ACSound[method]();
       }
     } catch (e) { /* audio is best-effort */ }
+  }
+
+  /**
+   * Intro: mute SFX only for 3s (keep talk + BGM). Then restore SFX
+   * if the user still has Sound effects enabled in settings.
+   */
+  function muteIntroSfxBriefly() {
+    if (!window.ACSound || typeof ACSound.setChannel !== 'function') return;
+    if (state.introSfxTimer) {
+      clearTimeout(state.introSfxTimer);
+      state.introSfxTimer = null;
+    }
+    try { ACSound.setChannel('sfx', false); } catch (e) {}
+    state.introSfxTimer = setTimeout(function () {
+      state.introSfxTimer = null;
+      try {
+        if (state.muted) return;
+        if (storageGet('audio_sfx', 'true') === 'false') return;
+        ACSound.setChannel('sfx', true);
+      } catch (e2) {}
+    }, 3000);
   }
 
   /** Guarded localStorage read. Returns defaultValue on any failure. */
@@ -203,7 +230,7 @@
    * @param skipIfReduced  instant-complete under reduced motion (default true)
    * @returns {{ skip: function }} — call .skip() to finish instantly
    */
-  function typewriter(el, segments, speedMs, done, skipIfReduced) {
+  function typewriter(el, segments, speedMs, done, skipIfReduced, silent) {
     if (skipIfReduced === undefined) skipIfReduced = true;
     speedMs = speedMs || 55; /* Match Animalese syllable (~60–80ms) */
 
@@ -259,7 +286,7 @@
     }
 
     el.classList.add('ac-caret');
-    sound('resetTalk');
+    if (!silent) sound('resetTalk');
 
     var si = 0, ci = 0;
     (function tick() {
@@ -275,7 +302,7 @@
       node.el.textContent = t.slice(0, ci);
       var ch = t.charAt(ci - 1);
       /* Animalese talk on letters; pause on punctuation (no voice) */
-      if (ch && ch !== ' ' && ch !== '\n' && !/[.,!?;:'"…]/.test(ch)) {
+      if (!silent && ch && ch !== ' ' && ch !== '\n' && !/[.,!?;:'"…]/.test(ch)) {
         if (window.ACSound && typeof ACSound.talk === 'function') sound('talk', ch);
         else sound('blip');
       }
@@ -574,6 +601,10 @@
   }
 
   function advancePrimary() {
+    if (state.photoViewerOpen) {
+      stepPhotoViewer(1);
+      return true;
+    }
     if (clickVisibleAdvanceButton()) return true;
     if (state.mailInterruptOpen) {
       openMailSurprise();
@@ -607,7 +638,11 @@
       if (isAdvanceKey(e)) {
         e.preventDefault();
         e.stopPropagation();
+        startMenuMusic();
         dismissStartGate();
+      } else {
+        /* Any other key still unlocks AudioContext + BGM on the menu */
+        startMenuMusic();
       }
       return;
     }
@@ -615,6 +650,18 @@
     if (isTextField) return;
 
     if (key === 'Escape' || code === 'Escape') {
+      if (dom.audioSettingsPanel && !dom.audioSettingsPanel.hidden) {
+        e.preventDefault();
+        e.stopPropagation();
+        setAudioSettingsOpen(false);
+        return;
+      }
+      if (state.photoViewerOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        closePhotoViewer();
+        return;
+      }
       if (state.navOpen) {
         e.preventDefault();
         e.stopPropagation();
@@ -624,9 +671,16 @@
       return;
     }
 
-    /* X / Y mute — matches on-screen sound toggle chip */
-    if (code === 'KeyX' || key === 'x' || key === 'X' ||
-        code === 'KeyY' || key === 'y' || key === 'Y') {
+    /* X opens audio settings (Y still mute-all shortcut) */
+    if (code === 'KeyX' || key === 'x' || key === 'X') {
+      e.preventDefault();
+      e.stopPropagation();
+      if (dom.audioSettingsPanel) {
+        setAudioSettingsOpen(!!dom.audioSettingsPanel.hidden);
+      }
+      return;
+    }
+    if (code === 'KeyY' || key === 'y' || key === 'Y') {
       e.preventDefault();
       e.stopPropagation();
       toggleMute();
@@ -636,7 +690,8 @@
     if (code === 'ArrowRight' || key === 'ArrowRight' ||
         code === 'PageDown' || key === 'PageDown') {
       e.preventDefault();
-      if (state.surpriseOpened) advanceSurpriseBeat();
+      if (state.photoViewerOpen) stepPhotoViewer(1);
+      else if (state.surpriseOpened) advanceSurpriseBeat();
       else if (state.currentScene < TOTAL_SECTIONS - 1) scrollToScene(state.currentScene + 1);
       return;
     }
@@ -645,7 +700,17 @@
         code === 'PageUp' || key === 'PageUp' ||
         code === 'KeyB' || key === 'b' || key === 'B') {
       e.preventDefault();
-      if (!state.surpriseOpened && !state.mailInterruptOpen && state.currentScene > 0) {
+      if (state.photoViewerOpen) {
+        if (code === 'KeyB' || key === 'b' || key === 'B') closePhotoViewer();
+        else stepPhotoViewer(-1);
+      } else if (state.surpriseOpened) {
+        retreatSurpriseBeat();
+      } else if (state.mailInterruptOpen) {
+        sound('cancel');
+        clearSavingSequence();
+        clearMailInterrupt();
+        if (state.currentScene > 0) scrollToScene(state.currentScene - 1);
+      } else if (state.currentScene > 0) {
         closePresentationNav();
         scrollToScene(state.currentScene - 1);
       }
@@ -655,11 +720,11 @@
     if (isAdvanceKey(e)) {
       /* Focused mute / edit controls must not be stolen by A/Space advance */
       var ae = document.activeElement;
-      if (ae && ae.closest && ae.closest('.sound-toggle, .edit-link, .site-controls a, .presentation-nav')) {
-        if (ae.closest('.sound-toggle')) {
+      if (ae && ae.closest && ae.closest('.audio-settings, .sound-toggle, .edit-link, .site-controls a, .presentation-nav')) {
+        if (ae.closest('.audio-settings__toggle, .sound-toggle')) {
           e.preventDefault();
           e.stopPropagation();
-          toggleMute();
+          if (dom.audioSettingsPanel) setAudioSettingsOpen(!!dom.audioSettingsPanel.hidden);
         }
         return;
       }
@@ -678,14 +743,15 @@
     if (state.startGateDismissed) return;
     state.startGateDismissed = true;
 
-    /* Initialize audio (must be in a user gesture) */
+    /* Music may already be running from start-menu gesture */
     try {
       if (window.ACSound && typeof ACSound.init === 'function') {
         ACSound.init();
-        /* apply persisted mute BEFORE starting ambient so a muted visitor
-           never hears the ambient bed */
+        loadAudioChannelPrefs();
         if (typeof ACSound.setMuted === 'function') ACSound.setMuted(state.muted);
         if (!state.muted && typeof ACSound.startAmbient === 'function') ACSound.startAmbient();
+        /* First 3s of intro: BGM + talk only; SFX resume after */
+        muteIntroSfxBriefly();
       }
     } catch (e) { /* audio best-effort */ }
 
@@ -708,7 +774,10 @@
     document.body.classList.add('is-started');
 
     /* Show presentation controls + scene nav */
-    if (dom.siteControls) dom.siteControls.hidden = false;
+    if (dom.siteControls) {
+      dom.siteControls.hidden = false;
+      dom.siteControls.classList.remove('is-on-start');
+    }
     if (dom.presentationNav) dom.presentationNav.hidden = false;
 
     /* Begin opening sequence */
@@ -751,26 +820,47 @@
     if (!gate.hasAttribute('role')) gate.setAttribute('role', 'dialog');
     gate.setAttribute('aria-modal', 'true');
 
+    /* Show settings on the start menu (bottom-right) so music can be heard here. */
+    if (dom.siteControls) {
+      dom.siteControls.hidden = false;
+      dom.siteControls.classList.add('is-on-start');
+    }
+
+    /* Any gesture on the start menu starts BGM — gate stays until Press A. */
+    function armMenuMusic(e) {
+      startMenuMusic();
+    }
+    gate.addEventListener('pointerdown', armMenuMusic);
+    gate.addEventListener('touchstart', armMenuMusic, { passive: true });
+    gate.addEventListener('keydown', armMenuMusic, true);
+
     var btn = $('.start-gate__button', gate);
     if (btn) {
       btn.addEventListener('click', function (e) {
         e.preventDefault();
+        e.stopPropagation();
+        startMenuMusic();
         dismissStartGate();
       });
     }
 
-    /* Clicking anywhere on the gate also starts */
+    /* Clicking the green backdrop only wakes music — does NOT enter the island. */
     gate.addEventListener('click', function (e) {
-      /* Don't double-fire if the button was clicked */
       if (e.target === btn || (btn && btn.contains(e.target))) return;
-      dismissStartGate();
+      if (e.target.closest && e.target.closest('.site-controls, .audio-settings')) return;
+      e.preventDefault();
+      startMenuMusic();
     });
 
-    /* Keys (Enter / Space / A) are handled by handleKeyDown while the gate
-       is up, so no separate listener is needed here (avoids double-firing). */
+    /* Keys (Enter / Space / A) dismiss via handleKeyDown. */
 
     if (!state.startGateDismissed) {
+      /* Keep site-controls interactive on the start menu */
       setBackgroundInert(true);
+      if (dom.siteControls) {
+        dom.siteControls.removeAttribute('inert');
+        dom.siteControls.removeAttribute('aria-hidden');
+      }
       if (btn) {
         try { btn.focus({ preventScroll: true }); } catch (e) { btn.focus(); }
       }
@@ -778,72 +868,136 @@
   }
 
   /* ================================================================
-     MUTE TOGGLE
+     AUDIO SETTINGS (music / dialogue / sfx)
      ================================================================ */
+
+  function loadAudioChannelPrefs() {
+    try {
+      if (!window.ACSound || typeof ACSound.setChannel !== 'function') return;
+      ['music', 'dialogue', 'sfx'].forEach(function (name) {
+        var raw = storageGet('audio_' + name, 'true');
+        ACSound.setChannel(name, raw !== 'false');
+      });
+      if (storageGet('muted', 'false') === 'true') {
+        state.muted = true;
+        if (typeof ACSound.setMuted === 'function') ACSound.setMuted(true);
+      }
+    } catch (e) {}
+  }
+
+  function syncAudioSettingsUI() {
+    var panel = dom.audioSettingsPanel || document.getElementById('audio-settings-panel');
+    if (!panel || !window.ACSound || typeof ACSound.getChannels !== 'function') return;
+    var ch = ACSound.getChannels();
+    var boxes = panel.querySelectorAll('[data-audio-channel]');
+    for (var i = 0; i < boxes.length; i++) {
+      var name = boxes[i].getAttribute('data-audio-channel');
+      boxes[i].checked = !!ch[name];
+    }
+    var muteBtn = panel.querySelector('[data-audio-mute-all]');
+    if (muteBtn) {
+      muteBtn.textContent = state.muted ? 'Unmute all' : 'Mute all';
+    }
+  }
+
+  function setAudioSettingsOpen(open) {
+    var panel = dom.audioSettingsPanel;
+    var toggle = dom.audioSettingsToggle;
+    if (!panel || !toggle) return;
+    panel.hidden = !open;
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
 
   function toggleMute() {
     var turningOff = !state.muted;
     state.muted = !state.muted;
     storageSet('muted', String(state.muted));
-    updateMuteUI();
     try {
       if (!window.ACSound) return;
       if (turningOff) {
-        /* Click feedback while still audible, then hard mute */
-        if (typeof ACSound.select === 'function' && !ACSound.isMuted()) ACSound.select();
         if (typeof ACSound.setMuted === 'function') ACSound.setMuted(true);
         if (state.startGateDismissed && typeof ACSound.stopAmbient === 'function') {
+          /* keep bed paused under master mute; restart on unmute */
+          if (typeof ACSound.isAmbientRunning === 'function' && ACSound.isAmbientRunning()) {
+            state._bgmWasRunning = true;
+          }
           ACSound.stopAmbient();
         }
       } else {
         if (typeof ACSound.setMuted === 'function') ACSound.setMuted(false);
-        if (state.startGateDismissed && typeof ACSound.startAmbient === 'function') {
-          ACSound.startAmbient();
-        }
-        if (typeof ACSound.select === 'function') ACSound.select();
+        if (typeof ACSound.startAmbient === 'function') ACSound.startAmbient();
       }
-    } catch (e) { /* audio best-effort */ }
+    } catch (e) {}
+    syncAudioSettingsUI();
   }
 
   function setupMuteToggle() {
-    var btn = dom.soundToggle;
-    if (!btn) return;
+    loadAudioChannelPrefs();
+    syncAudioSettingsUI();
 
-    /* Restore persisted mute state (applied to ACSound on start-gate dismiss) */
-    state.muted = storageGet('muted', 'false') === 'true';
-    updateMuteUI();
+    var toggle = dom.audioSettingsToggle;
+    var panel = dom.audioSettingsPanel;
+    if (!toggle || !panel) return;
 
-    btn.addEventListener('click', function (e) {
+    toggle.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
-      toggleMute();
+      setAudioSettingsOpen(panel.hidden);
+    });
+
+    panel.addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+
+    panel.addEventListener('change', function (e) {
+      var input = e.target.closest('[data-audio-channel]');
+      if (!input || !window.ACSound || typeof ACSound.setChannel !== 'function') return;
+      var name = input.getAttribute('data-audio-channel');
+      var on = !!input.checked;
+      storageSet('audio_' + name, String(on));
+      ACSound.setChannel(name, on);
+      if (name === 'music' && on && !state.muted) {
+        if (typeof ACSound.startAmbient === 'function') ACSound.startAmbient();
+      }
+    });
+
+    var muteAll = panel.querySelector('[data-audio-mute-all]');
+    if (muteAll) {
+      muteAll.addEventListener('click', function (e) {
+        e.preventDefault();
+        toggleMute();
+      });
+    }
+
+    document.addEventListener('click', function (e) {
+      if (!panel || panel.hidden) return;
+      if (dom.audioSettings && dom.audioSettings.contains(e.target)) return;
+      setAudioSettingsOpen(false);
     });
   }
 
   function updateMuteUI() {
-    var btn = dom.soundToggle;
-    if (!btn) return;
+    syncAudioSettingsUI();
+  }
 
-    var label = dom.soundToggleLabel;
-    var keyEl = dom.soundToggleKey;
-    var data = state.data || ((window.ACContent && window.ACContent.data) ? window.ACContent.data : {}) || {};
-    var ui = data.ui || {};
-
-    if (label) {
-      label.textContent = state.muted ? (ui.soundOn || 'Sound on') : (ui.soundOff || 'Sound off');
-    }
-    btn.setAttribute('aria-pressed', String(state.muted));
-    btn.setAttribute('aria-label', state.muted ? (ui.soundOn || 'Sound on') : (ui.soundOff || 'Sound off'));
-    if (keyEl) {
-      keyEl.textContent = 'X';
-      keyEl.classList.remove('ac-key--y');
-      keyEl.classList.add('ac-key--x');
+  /** Start BGM on the start menu. Retries if autoplay was blocked. */
+  function startMenuMusic() {
+    try {
+      if (!window.ACSound) return;
+      if (typeof ACSound.init === 'function') ACSound.init();
+      loadAudioChannelPrefs();
       if (state.muted) {
-        keyEl.style.background = 'var(--ac-ink-soft)';
-      } else {
-        keyEl.style.background = '';
+        state.menuMusicStarted = true;
+        return;
       }
-    }
+      var running = typeof ACSound.isAmbientRunning === 'function' && ACSound.isAmbientRunning();
+      if (running) {
+        state.menuMusicStarted = true;
+        return;
+      }
+      if (typeof ACSound.startAmbient === 'function') ACSound.startAmbient();
+      state.menuMusicStarted = true;
+    } catch (e) {}
   }
 
   /* ================================================================
@@ -871,6 +1025,10 @@
       clearSavingSequence();
       clearMailInterrupt();
       closeSurprisePopup();
+    }
+
+    if (state.photoViewerOpen && SECTION_IDS[idx] !== 'gallery') {
+      closePhotoViewer();
     }
 
     /* Call the section's enter() if it exists */
@@ -1302,6 +1460,7 @@
     if (!popup) return;
     var prog = popup.querySelector('[data-surprise-progress]');
     var label = popup.querySelector('[data-surprise-next-label]');
+    var backBtn = popup.querySelector('[data-surprise-back]');
     var total = state.surpriseBeats.length || 1;
     var cur = Math.min(state.surpriseBeatIndex + 1, total);
     if (prog) prog.textContent = cur + ' / ' + total;
@@ -1310,6 +1469,11 @@
       var nextTxt = (C && C.get('ui.next')) || 'Next';
       var doneTxt = (C && C.get('ui.replay')) || 'Play it again';
       label.textContent = (state.surpriseBeatIndex >= total - 1) ? doneTxt : nextTxt;
+    }
+    if (backBtn) {
+      /* Always offer Back — on first beat it exits to the prior deck scene. */
+      backBtn.hidden = false;
+      backBtn.disabled = false;
     }
   }
 
@@ -1334,11 +1498,28 @@
       sound('select');
       setTimeout(function () { sound('stamp'); }, state.reducedMotion ? 0 : 400);
       setTimeout(function () { sound('fanfare'); }, state.reducedMotion ? 150 : 900);
+    } else if (num === '4') {
+      sound('select');
     } else if (num === '5') {
       sound('fanfare');
     } else {
       sound('select');
     }
+  }
+
+  function retreatSurpriseBeat() {
+    if (!state.surpriseOpened) return false;
+    if (state.surpriseBeatIndex <= 0) {
+      /* Leave surprise → previous deck scene (gallery) */
+      sound('cancel');
+      clearSavingSequence();
+      clearMailInterrupt();
+      closeSurprisePopup();
+      if (state.currentScene > 0) scrollToScene(state.currentScene - 1);
+      return true;
+    }
+    showSurpriseBeat(state.surpriseBeatIndex - 1);
+    return true;
   }
 
   function advanceSurpriseBeat() {
@@ -1352,7 +1533,8 @@
       var typingLine = $('.reveal__line', cur) || $('[data-typing]', cur);
       if (isTyping(typingLine)) {
         skipTyping(typingLine);
-        sound('confirm');
+        var box = typingLine && typingLine.closest('.ac-box');
+        if (box) box.classList.add('is-done');
         return true;
       }
     }
@@ -1380,11 +1562,15 @@
     body.textContent = '';
     state.surpriseBeats = [];
 
-    /* Clone beats 2–5; show only one at a time */
-    for (var i = 2; i <= 5; i++) {
+    /* Announcement → Nook Miles achievement (skip letter + finale) */
+    var beatOrder = [2, 3];
+    for (var bi = 0; bi < beatOrder.length; bi++) {
+      var i = beatOrder[bi];
       var beat = $('[data-reveal-beat="' + i + '"]', revealRoot);
       if (!beat) continue;
       var clone = beat.cloneNode(true);
+      clone.hidden = false;
+      clone.removeAttribute('aria-hidden');
       clone.classList.add('is-in');
       clone.classList.remove('is-show');
       clone.removeAttribute('style');
@@ -1458,12 +1644,157 @@
           advanceSurpriseBeat();
           return;
         }
+        if (e.target.closest('[data-surprise-back]')) {
+          e.preventDefault();
+          pressButtonFeedback(e.target.closest('[data-surprise-back]'));
+          retreatSurpriseBeat();
+          return;
+        }
         if (e.target.closest('[data-surprise-close]')) {
           /* Scrim close must not leave empty reveal — replay Saving */
           resetRevealChain();
         }
       });
     }
+  }
+
+  /* ================================================================
+     SCRAPBOOK PHOTO VIEWER
+     ================================================================ */
+
+  function collectGalleryPhotos() {
+    var C = window.ACContent;
+    var raw = (C && C.get) ? C.get('gallery.photos') : [];
+    var out = [];
+    if (!Array.isArray(raw)) return out;
+    for (var i = 0; i < raw.length; i++) {
+      var ph = raw[i] || {};
+      if (!ph.image || (C.isBlank && C.isBlank(ph.image))) continue;
+      var src = C.fill ? C.fill(ph.image) : String(ph.image);
+      if (!src) continue;
+      var title = '';
+      if (ph.caption && !(C.isBlank && C.isBlank(ph.caption))) {
+        title = C.fill ? C.fill(ph.caption) : String(ph.caption);
+      } else if (ph.alt && !(C.isBlank && C.isBlank(ph.alt))) {
+        title = C.fill ? C.fill(ph.alt) : String(ph.alt);
+      }
+      out.push({ src: src, title: title, alt: title || '' });
+    }
+    return out;
+  }
+
+  function updatePhotoViewer() {
+    var viewer = dom.photoViewer || document.getElementById('photo-viewer');
+    if (!viewer) return;
+    var items = state.photoViewerItems;
+    var idx = state.photoViewerIndex;
+    if (!items.length) return;
+    idx = ((idx % items.length) + items.length) % items.length;
+    state.photoViewerIndex = idx;
+    var item = items[idx];
+    var img = viewer.querySelector('[data-photo-img]');
+    var title = viewer.querySelector('[data-photo-title]');
+    var count = viewer.querySelector('[data-photo-count]');
+    var prev = viewer.querySelector('[data-photo-prev]');
+    var next = viewer.querySelector('[data-photo-next]');
+    if (img) {
+      img.src = item.src;
+      img.alt = item.alt || item.title || '';
+    }
+    if (title) title.textContent = item.title || '';
+    if (count) count.textContent = (idx + 1) + ' / ' + items.length;
+    if (prev) prev.disabled = items.length < 2;
+    if (next) next.disabled = items.length < 2;
+  }
+
+  function openPhotoViewer(idx, opener) {
+    var viewer = dom.photoViewer || document.getElementById('photo-viewer');
+    if (!viewer) return;
+    state.photoViewerItems = collectGalleryPhotos();
+    if (!state.photoViewerItems.length) return;
+    state.photoViewerIndex = Math.max(0, Math.min(idx | 0, state.photoViewerItems.length - 1));
+    state.photoViewerOpener = opener || null;
+    state.photoViewerOpen = true;
+    viewer.hidden = false;
+    viewer.setAttribute('aria-hidden', 'false');
+    void viewer.offsetWidth;
+    viewer.classList.add('is-in');
+    updatePhotoViewer();
+    sound('select');
+    var closeBtn = viewer.querySelector('[data-photo-close]');
+    if (closeBtn) {
+      try { closeBtn.focus({ preventScroll: true }); } catch (e) { closeBtn.focus(); }
+    }
+  }
+
+  function closePhotoViewer() {
+    var viewer = dom.photoViewer || document.getElementById('photo-viewer');
+    if (!viewer) return;
+    viewer.classList.remove('is-in');
+    viewer.hidden = true;
+    viewer.setAttribute('aria-hidden', 'true');
+    state.photoViewerOpen = false;
+    var opener = state.photoViewerOpener;
+    state.photoViewerOpener = null;
+    if (opener && typeof opener.focus === 'function') {
+      try { opener.focus({ preventScroll: true }); } catch (e) { opener.focus(); }
+    }
+  }
+
+  function stepPhotoViewer(dir) {
+    if (!state.photoViewerOpen || !state.photoViewerItems.length) return;
+    state.photoViewerIndex += dir < 0 ? -1 : 1;
+    updatePhotoViewer();
+    sound('select');
+  }
+
+  function setupPhotoViewer() {
+    var viewer = document.getElementById('photo-viewer');
+    dom.photoViewer = viewer;
+    if (!viewer || viewer._acBound) return;
+    viewer._acBound = true;
+
+    viewer.addEventListener('click', function (e) {
+      if (e.target.closest('[data-photo-close]')) {
+        e.preventDefault();
+        closePhotoViewer();
+        return;
+      }
+      if (e.target.closest('[data-photo-prev]')) {
+        e.preventDefault();
+        stepPhotoViewer(-1);
+        return;
+      }
+      if (e.target.closest('[data-photo-next]')) {
+        e.preventDefault();
+        stepPhotoViewer(1);
+      }
+    });
+
+    document.addEventListener('click', function (e) {
+      var frame = e.target.closest('[data-photo-index]');
+      if (!frame) return;
+      var gallery = document.getElementById('gallery');
+      if (!gallery || !gallery.contains(frame)) return;
+      e.preventDefault();
+      var idx = parseInt(frame.getAttribute('data-photo-index'), 10);
+      if (isNaN(idx)) return;
+      openPhotoViewer(idx, frame);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (!e.target || !e.target.closest) return;
+      var frame = e.target.closest('[data-photo-index]');
+      if (!frame) return;
+      var gallery = document.getElementById('gallery');
+      if (!gallery || !gallery.contains(frame)) return;
+      if (e.key !== 'Enter' && e.key !== ' ' && e.code !== 'Space' && e.code !== 'Enter') return;
+      e.preventDefault();
+      e.stopPropagation();
+      var idx = parseInt(frame.getAttribute('data-photo-index'), 10);
+      if (isNaN(idx)) return;
+      openPhotoViewer(idx, frame);
+    }, true);
   }
 
   function triggerBeat(num, el) {
@@ -1486,42 +1817,32 @@
   }
 
   function triggerAnnouncementTypewriter(beatEl) {
-    /* Find the typed line inside beat 2 */
-    var lineEl = $('.reveal__line', beatEl) || $('.rv-line', beatEl) || $('[data-typing]', beatEl);
-    if (!lineEl) return;
+    var lineEl = $('.reveal__line', beatEl) || $('[data-typing]', beatEl);
+    var boxEl = beatEl && (lineEl ? lineEl.closest('.ac-box') : $('.ac-box', beatEl));
+    function revealDetail() {
+      if (boxEl) boxEl.classList.add('is-done');
+    }
 
-    /* Read data attributes set by the section module:
-       data-typing: JSON array of segments */
-    var raw = lineEl.getAttribute('data-typing');
-    if (!raw) return;
-
-    var segments;
-    try {
-      segments = JSON.parse(raw);
-    } catch (e) {
+    if (!lineEl) {
+      revealDetail();
       return;
     }
-    if (!segments || !segments.length) return;
 
-    var boxEl = lineEl.closest('.rv-box') || lineEl.closest('.ac-box');
-    var emoteEl = $('.rv-emote', beatEl);
-    var subEl = $('.rv-sub', beatEl);
+    var raw = lineEl.getAttribute('data-typing');
+    var segments = null;
+    if (raw) {
+      try { segments = JSON.parse(raw); } catch (e) { segments = null; }
+    }
 
     if (boxEl) boxEl.classList.remove('is-done');
-    if (emoteEl) emoteEl.classList.remove('is-on');
 
-    typewriter(lineEl, segments, 55, function () {
-      if (boxEl) boxEl.classList.add('is-done');
-      if (emoteEl) {
-        emoteEl.classList.add('is-on');
-        if (!state.reducedMotion) {
-          emoteEl.classList.remove('ac-pop');
-          void emoteEl.offsetWidth;
-          emoteEl.classList.add('ac-pop');
-        }
-      }
-      sound('confirm');
-    });
+    if (!segments || !segments.length) {
+      revealDetail();
+      return;
+    }
+
+    /* Moving-up line: talk chirps; detail fades in when done */
+    typewriter(lineEl, segments, 55, revealDetail);
   }
 
   /** Convert a rich-text DOM node into typewriter segments ({text, cls?}). */
@@ -1599,7 +1920,7 @@
     var seed = 7;
     function rnd() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
 
-    for (var i = 0; i < 72; i++) {
+    for (var i = 0; i < 120; i++) {
       var piece = document.createElement('span');
       piece.className = 'confetti-piece';
       var d = 4.5 + rnd() * 5.5;
@@ -1677,9 +1998,9 @@
     if (!segments.length) return;
 
     openingDialogue.typing = true;
+    /* Talk chirps + BGM; SFX gated by muteIntroSfxBriefly() */
     typewriter(lineEl, segments, 55, function () {
       openingDialogue.typing = false;
-      sound('confirm');
     });
   }
 
@@ -1703,7 +2024,7 @@
     if (isTyping(lineEl) || openingDialogue.typing) {
       skipTyping(lineEl);
       openingDialogue.typing = false;
-      sound('confirm');
+      sound('select');
       return true;
     }
 
@@ -1729,7 +2050,6 @@
         openingDialogue.typing = true;
         typewriter(lineEl, segments, 55, function () {
           openingDialogue.typing = false;
-          sound('confirm');
         });
       }
       if (openingDialogue.index === lines.length - 1) {
@@ -1804,9 +2124,12 @@
     dom.startGate      = document.getElementById('start-gate');
     dom.siteControls   = $('.site-controls');
     dom.sceneProgress  = $('.section-progress');
-    dom.soundToggle    = $('.sound-toggle');
-    dom.soundToggleLabel = $('.sound-toggle__label');
-    dom.soundToggleKey = $('.sound-toggle .ac-key');
+    dom.audioSettings  = $('.audio-settings');
+    dom.audioSettingsToggle = $('.audio-settings__toggle');
+    dom.audioSettingsPanel = document.getElementById('audio-settings-panel');
+    dom.soundToggle    = $('.audio-settings__toggle'); /* legacy alias */
+    dom.soundToggleLabel = $('.audio-settings__toggle-label');
+    dom.soundToggleKey = $('.audio-settings__toggle .ac-key');
     dom.skipLink       = $('.skip-link');
     dom.main           = document.getElementById('main');
     dom.sceneWipe      = document.getElementById('scene-wipe');
@@ -2069,6 +2392,9 @@
 
     /* Collapsible scene nav */
     setupPresentationNav();
+
+    /* Scrapbook full-photo lightbox */
+    setupPhotoViewer();
 
     /* Keyboard navigation */
     document.addEventListener('keydown', handleKeyDown, true);

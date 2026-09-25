@@ -280,6 +280,18 @@ content:
               - name: ticketValue
                 label: Ticket big text
                 type: string
+              - name: chapterLabel
+                label: Progress bar title
+                type: string
+              - name: chapterCount
+                label: Progress count (e.g. 1/1)
+                type: string
+              - name: chapterNote
+                label: Progress bar note
+                type: text
+              - name: tagMom
+                label: Pink tag
+                type: string
           - name: letter
             label: Step 4 · Letter
             type: object

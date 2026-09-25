@@ -66,7 +66,8 @@
       },
       {
         "time": "5:00PM-7:00PM",
-        "title": "Dinner/Evening Walk/Bed Time Routine"
+        "title": "Dinner/Evening Walk/Bed Time Routine",
+        "detail": "Full bellies means a sleepier baby!"
       },
       {
         "time": "8:00PM",
@@ -78,32 +79,80 @@
   "stats": {
     "title": "Resident Stats",
     "items": [
-      {},
-      {},
-      {},
-      {},
-      {},
-      {},
-      {},
-      {}
+      {
+        "label": "Snacks Served",
+        "value": "150"
+      },
+      {
+        "label": "Books Read",
+        "value": "200"
+      },
+      {
+        "label": "Nursery Rhymes Sung On Repeat",
+        "value": "50"
+      },
+      {
+        "label": "Laundry Loads",
+        "value": "30"
+      },
+      {
+        "label": "Caffeine Intake",
+        "value": "...More than the average person should ingest "
+      },
+      {
+        "label": "Love Given",
+        "value": "Infinite <3"
+      }
     ]
   },
   "gallery": {
     "title": "Little Moments",
     "photos": [
-      {},
-      {},
-      {},
-      {},
-      {},
-      {},
-      {},
-      {}
+      {
+        "image": "assets/photos/img0531.jpeg",
+        "alt": "Morning Walk"
+      },
+      {
+        "image": "assets/photos/img0578.jpeg",
+        "alt": "ESR (Emotional Support Rock)"
+      },
+      {
+        "image": "assets/photos/img0601.jpeg",
+        "alt": "Brekky Time"
+      },
+      {
+        "image": "assets/photos/img0605.jpeg",
+        "alt": "Let Him Cook"
+      },
+      {
+        "image": "assets/photos/img0580.jpeg",
+        "alt": "Milk Break"
+      },
+      {
+        "image": "assets/photos/img0606.jpeg",
+        "alt": "Family Afternoon Walk"
+      },
+      {
+        "image": "assets/photos/img6841.jpeg",
+        "alt": "Nap Time"
+      },
+      {
+        "image": "assets/photos/img0609.jpeg",
+        "alt": "Play time with dad ^.^"
+      },
+      {
+        "image": "assets/photos/img6816.jpeg",
+        "alt": "Bed Time Milk"
+      },
+      {
+        "image": "assets/photos/img6678.jpeg",
+        "alt": "Good Night"
+      }
     ]
   },
   "reveal": {
     "years": "2",
-    "startDate": "October 4th",
+    "startDate": "October 5th",
     "saving": {
       "title": "Saving...",
       "note": "Do not turn off the power.",
@@ -112,22 +161,26 @@
     "announcement": {
       "speaker": "Resident Services",
       "badge": "Island news!",
-      "line": "{name} is *moving up*!",
-      "detail": "After {years} years as {son}'s stay-at-home mom, she is starting a new job on {startDate}."
+      "line": "Allyssa is *moving up*!",
+      "detail": "Not from the island, but to the next chapter of her life!"
     },
     "achievement": {
       "badge": "Nook Miles+ · Achievement unlocked",
       "stamp": "Hired!",
       "title": "Career change!",
-      "detail": "After {years} years as {son}'s stay-at-home mom, {name} is starting a new job on {startDate}.",
-      "ticketLabel": "Confirmed milestone",
-      "ticketValue": "New job"
+      "detail": "After two years at the hardest job on the island, Allyssa picked up a second one.",
+      "ticketLabel": "Nook Miles earned",
+      "ticketValue": "Priceless",
+      "chapterLabel": "New chapter unlocked",
+      "chapterCount": "1/1",
+      "chapterNote": "\"Keone's Mom\" stays equipped forever. No two weeks' notice required.",
+      "tagMom": "Mom: still on duty"
     },
     "letter": {
       "greeting": "Dear everyone,",
       "lines": [
-        "After {years} years as *{son}*'s stay-at-home mom, I'm starting a new job.",
-        "My first day is {startDate}."
+        "After 2 years as Keone's stay-at-home mom, I'm starting a new job.",
+        "My first day is October 5th."
       ],
       "signature": "{name}",
       "calendarLabel": "First day"
