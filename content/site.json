@@ -78,14 +78,24 @@
   "stats": {
     "title": "Resident Stats",
     "items": [
-      {},
-      {},
-      {},
-      {},
-      {},
-      {},
-      {},
-      {}
+      {
+        "label": "Snacks Served"
+      },
+      {
+        "label": "Books Read"
+      },
+      {
+        "label": "Nursery Rhymes Sung On Repeat"
+      },
+      {
+        "label": "Laundry Loads"
+      },
+      {
+        "label": "Caffeine Intake"
+      },
+      {
+        "label": "Love Given"
+      }
     ]
   },
   "gallery": {
