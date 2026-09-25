@@ -107,19 +107,48 @@
   "gallery": {
     "title": "Little Moments",
     "photos": [
-      {},
-      {},
-      {},
-      {},
-      {},
-      {},
-      {},
-      {}
+      {
+        "image": "assets/photos/img0531.jpeg",
+        "alt": "Morning Walk"
+      },
+      {
+        "image": "assets/photos/img0578.jpeg",
+        "alt": "ESR (Emotional Support Rock)"
+      },
+      {
+        "image": "assets/photos/img0601.jpeg",
+        "alt": "Brekky Time"
+      },
+      {
+        "image": "assets/photos/img0605.jpeg",
+        "alt": "Let Him Cook"
+      },
+      {
+        "image": "assets/photos/img0580.jpeg",
+        "alt": "Milk Break"
+      },
+      {
+        "image": "assets/photos/img0606.jpeg",
+        "alt": "Family Afternoon Walk"
+      },
+      {
+        "image": "assets/photos/img6841.jpeg",
+        "alt": "Nap Time"
+      },
+      {
+        "image": "assets/photos/img0218.jpeg"
+      },
+      {
+        "image": "assets/photos/img6816.jpeg"
+      },
+      {
+        "image": "assets/photos/img6678.jpeg"
+      }
     ]
   },
   "reveal": {
     "years": "2",
-    "startDate": "October 4th",
+    "startDate": "October 5th",
     "saving": {
       "title": "Saving...",
       "note": "Do not turn off the power.",
@@ -128,8 +157,8 @@
     "announcement": {
       "speaker": "Resident Services",
       "badge": "Island news!",
-      "line": "{name} is *moving up*!",
-      "detail": "After {years} years as {son}'s stay-at-home mom, she is starting a new job on {startDate}."
+      "line": "Allyssa is *moving up*!",
+      "detail": "After 2 years as Keone's stay-at-home mom, she is starting a new job on October 5th."
     },
     "achievement": {
       "badge": "Nook Miles+ · Achievement unlocked",
