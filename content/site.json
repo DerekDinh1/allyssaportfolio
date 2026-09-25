@@ -110,43 +110,53 @@
     "photos": [
       {
         "image": "assets/photos/img0531.jpeg",
-        "alt": "Morning Walk"
+        "alt": "Morning Walk",
+        "caption": "Morning Walk"
       },
       {
         "image": "assets/photos/img0578.jpeg",
-        "alt": "ESR (Emotional Support Rock)"
+        "alt": "ESR (Emotional Support Rock)",
+        "caption": "ESR (Emotional Support Rock)"
       },
       {
         "image": "assets/photos/img0601.jpeg",
-        "alt": "Brekky Time"
+        "alt": "Brekky Time",
+        "caption": "Brekky Time"
       },
       {
         "image": "assets/photos/img0605.jpeg",
-        "alt": "Let Him Cook"
+        "alt": "Let Him Cook",
+        "caption": "Let Him Cook"
       },
       {
         "image": "assets/photos/img0580.jpeg",
-        "alt": "Milk Break"
+        "alt": "Milk Break",
+        "caption": "Milk Break"
       },
       {
         "image": "assets/photos/img0606.jpeg",
-        "alt": "Family Afternoon Walk"
+        "alt": "Family Afternoon Walk",
+        "caption": "Family Afternoon Walk"
       },
       {
         "image": "assets/photos/img6841.jpeg",
-        "alt": "Nap Time"
+        "alt": "Nap Time",
+        "caption": "Nap Time"
       },
       {
         "image": "assets/photos/img0609.jpeg",
-        "alt": "Play time with dad ^.^"
+        "alt": "Play time with dad ^.^",
+        "caption": "Play time with dad ^.^"
       },
       {
         "image": "assets/photos/img6816.jpeg",
-        "alt": "Bed Time Milk"
+        "alt": "Bed Time Milk",
+        "caption": "Bed Time Milk"
       },
       {
         "image": "assets/photos/img6678.jpeg",
-        "alt": "Good Night"
+        "alt": "Good Night",
+        "caption": "Good Night"
       }
     ]
   },
@@ -162,13 +172,13 @@
       "speaker": "Resident Services",
       "badge": "Island news!",
       "line": "Allyssa is *moving up*!",
-      "detail": "After 2 years as Keone's stay-at-home mom, she is starting a new job on October 5th."
+      "detail": "After 2 years as Keone's stay-at-home mom, Allyssa is starting a new JOB!"
     },
     "achievement": {
       "badge": "Nook Miles+ · Achievement unlocked",
       "stamp": "Hired!",
       "title": "Career change!",
-      "detail": "After 2 years as Keone's stay-at-home mom, Allyssa is starting a new job on October 5th.",
+      "detail": "After 2 years as Keone's stay-at-home mom, Allyssa is starting a new JOB!",
       "ticketLabel": "Confirmed milestone",
       "ticketValue": "New job"
     },
