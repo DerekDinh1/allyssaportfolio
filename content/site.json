@@ -79,22 +79,28 @@
     "title": "Resident Stats",
     "items": [
       {
-        "label": "Snacks Served"
+        "label": "Snacks Served",
+        "value": "150"
       },
       {
-        "label": "Books Read"
+        "label": "Books Read",
+        "value": "200"
       },
       {
-        "label": "Nursery Rhymes Sung On Repeat"
+        "label": "Nursery Rhymes Sung On Repeat",
+        "value": "50"
       },
       {
-        "label": "Laundry Loads"
+        "label": "Laundry Loads",
+        "value": "30"
       },
       {
-        "label": "Caffeine Intake"
+        "label": "Caffeine Intake",
+        "value": "...More than the average person should ingest "
       },
       {
-        "label": "Love Given"
+        "label": "Love Given",
+        "value": "Infinite <3"
       }
     ]
   },
